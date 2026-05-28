@@ -1,0 +1,13 @@
+services:
+  python-app:
+    image: python:3.13  # Python 3.13 ベースイメージを使用
+    container_name: discord-bot
+    working_dir: /app  # コンテナ内の作業ディレクトリ
+    volumes:
+      - .:/app  # ホスト側のカレントディレクトリをコンテナ内にマウント
+    environment:
+      - DISCORD_TOKEN=${DISCORD_TOKEN}  # .env から読み込む環境変数
+      - TARGET_GUILD_ID=${TARGET_GUILD_ID}
+      - TARGET_CHANNEL_ID=${TARGET_CHANNEL_ID}
+    command: >
+      sh -c "pip install -r requirements.txt && python main.py"  # pip install 実行後にアプリを起動
