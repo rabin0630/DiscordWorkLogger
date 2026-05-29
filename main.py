@@ -1,12 +1,30 @@
 from asyncio import base_futures
 from aiohttp import client_exceptions
 from datetime import timedelta
+import time
 import os
 import discord
 import gspread
 import json
 from datetime import datetime
 from dotenv import load_dotenv
+
+
+def countdown_timer(minutes:int,seconds:int=0):
+    seconds += minutes * 60
+    while seconds > 0:
+        # 分と秒を計算
+        mins, secs = divmod(seconds, 60)
+        # ゼロ埋めして "MM:SS" 形式で表示
+        timer = f"{mins:02d}:{secs:02d}"
+        print(timer, end="\r")
+        
+        # 1秒待機
+        time.sleep(1)
+        seconds -= 1
+        
+    print("時間終了！")
+
 
 
 # envファイル取得
@@ -78,7 +96,7 @@ async def on_message(message):
         
 
         if action == "oha1":
-            
+            countdown_timer(minutes=1)
             time = get_current_time()
             await message.channel.send(f"おはよう！{time}に出勤したよ！{message.author}")
             
