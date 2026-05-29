@@ -1,12 +1,7 @@
 import asyncio
-from asyncio import base_futures
-from aiohttp import client_exceptions
-from datetime import timedelta
 import time
 import os
 import discord
-import gspread
-import json
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -28,15 +23,15 @@ intents.voice_states = True
 # クライアントを作成
 client = discord.Client(intents=intents)
 
+# ユーザーごとのタイマータスクを管理する辞書
+active_timer_tasks = {}
 
 # 現在時刻を返す関数
 def get_current_time() -> str:
     return datetime.now().strftime("%H:%M")
 
-# ユーザーごとのタイマータスクを管理する辞書
-active_timer_tasks = {}
 
-async def run_simple_timer(user, channel, minutes: int):
+async def run_simple_timer(user:discord.User, channel:discord.abc.Messageable, minutes: int):
     try:
         await asyncio.sleep(minutes * 60)
         await channel.send(f"{user.mention} {minutes}分経過しました！")
@@ -60,11 +55,7 @@ async def run_pomodoro_timer(user, channel):
 @client.event
 async def on_ready():
     # 起動時
-    guild = client.get_guild(TARGET_GUILD_ID)
-    print(guild.name)
-    print(guild.text_channels[0].name)
     print(f"Logged in as {client.user}!")
-    print(client)
 
 
 @client.event
@@ -118,31 +109,28 @@ async def on_message(message):
         return
 
     # メッセージ内容に応じてアクションを設定
-    action = None
+    is_working = False
     if "おはよう" in message.content:
-        action = "oha1"
+        is_working = True
     elif "お疲れ" in message.content:
-        action = "otu"
+        is_working = True
 
     # データが設定されていない場合は終了
-    if not action:
+    if not is_working:
         return
 
     # スプレッドシートに書き込み
     try:
-        if action == "oha1":
+        if is_working:
             time = get_current_time()
             await message.channel.send(f"おはよう！{time}に出勤したよ！{message.author}")
             
-        elif action == "otu":
+        elif is_working:
             time = get_current_time()
             await message.channel.send(f"お疲れs！{time}に退勤したよ！")
 
-        await message.add_reaction("✅")  # :white_check_mark:
-        print(f"[{message.author.name}] {action} の記録が完了しました。")
     except Exception as e:
         print(f"err: {e}")
-        await message.add_reaction("❌")  # :x:
 
 # ユーザーのボイスチャンネル入室時刻を一時保存する辞書
 voice_active_users = {}
