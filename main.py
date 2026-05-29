@@ -1,3 +1,4 @@
+import asyncio
 from asyncio import base_futures
 from aiohttp import client_exceptions
 from datetime import timedelta
@@ -8,24 +9,6 @@ import gspread
 import json
 from datetime import datetime
 from dotenv import load_dotenv
-
-
-def countdown_timer(minutes:int,seconds:int=0):
-    seconds += minutes * 60
-    while seconds > 0:
-        # 分と秒を計算
-        mins, secs = divmod(seconds, 60)
-        # ゼロ埋めして "MM:SS" 形式で表示
-        timer = f"{mins:02d}:{secs:02d}"
-        print(timer, end="\r")
-        
-        # 1秒待機
-        time.sleep(1)
-        seconds -= 1
-        
-    print("時間終了！")
-
-
 
 # envファイル取得
 load_dotenv()
@@ -50,8 +33,28 @@ client = discord.Client(intents=intents)
 def get_current_time() -> str:
     return datetime.now().strftime("%H:%M")
 
+# ユーザーごとのタイマータスクを管理する辞書
+active_timer_tasks = {}
 
+async def run_simple_timer(user, channel, minutes: int):
+    try:
+        await asyncio.sleep(minutes * 60)
+        await channel.send(f"{user.mention} {minutes}分経過しました！")
+    except asyncio.CancelledError:
+        pass
+    finally:
+        active_timer_tasks.pop(user.id, None)
 
+async def run_pomodoro_timer(user, channel):
+    try:
+        await asyncio.sleep(25 * 60)
+        await channel.send(f"{user.mention} 25分経過！作業お疲れ様でした！5分間の休憩に入りましょう☕️")
+        await asyncio.sleep(5 * 60)
+        await channel.send(f"{user.mention} 5分間の休憩終了です！作業に戻りましょう！")
+    except asyncio.CancelledError:
+        pass
+    finally:
+        active_timer_tasks.pop(user.id, None)
 
 
 @client.event
@@ -80,10 +83,44 @@ async def on_message(message):
     user_id = str(message.author.id)  # ユーザー ID を文字列に変換
     
 
+    # --- タイマーコマンドの処理 ---
+    if message.content.startswith("/timer "):
+        cmd_parts = message.content.split()
+        if len(cmd_parts) >= 2:
+            arg = cmd_parts[1]
+            if arg == "stop":
+                task = active_timer_tasks.get(message.author.id)
+                if task:
+                    task.cancel()
+                    await message.channel.send(f"{message.author.mention} タイマーを停止しました。")
+                else:
+                    await message.channel.send(f"{message.author.mention} 実行中のタイマーはありません。")
+                return
+            elif arg.isdigit():
+                minutes = int(arg)
+                old_task = active_timer_tasks.get(message.author.id)
+                if old_task:
+                    old_task.cancel()
+                
+                await message.channel.send(f"{message.author.mention} タイマーを {minutes}分 にセットしました！")
+                task = asyncio.create_task(run_simple_timer(message.author, message.channel, minutes))
+                active_timer_tasks[message.author.id] = task
+                return
+
+    elif message.content == "/pomodoro timer":
+        old_task = active_timer_tasks.get(message.author.id)
+        if old_task:
+            old_task.cancel()
+            
+        await message.channel.send(f"{message.author.mention} ポモドーロタイマー開始！25分間の作業に集中しましょう！")
+        task = asyncio.create_task(run_pomodoro_timer(message.author, message.channel))
+        active_timer_tasks[message.author.id] = task
+        return
+
     # メッセージ内容に応じてアクションを設定
     action = None
     if "おはよう" in message.content:
-            action = "oha1"
+        action = "oha1"
     elif "お疲れ" in message.content:
         action = "otu"
 
@@ -93,10 +130,7 @@ async def on_message(message):
 
     # スプレッドシートに書き込み
     try:
-        
-
         if action == "oha1":
-            countdown_timer(minutes=1)
             time = get_current_time()
             await message.channel.send(f"おはよう！{time}に出勤したよ！{message.author}")
             
