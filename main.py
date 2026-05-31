@@ -2,6 +2,7 @@ import asyncio
 import time
 import os
 import discord
+import aiohttp
 from datetime import datetime
 from dotenv import load_dotenv
 
@@ -109,28 +110,47 @@ async def on_message(message):
         return
 
     # メッセージ内容に応じてアクションを設定
-    is_working = False
+    action = None
     if "おはよう" in message.content:
-        is_working = True
+        action = "clock_in"
     elif "お疲れ" in message.content:
-        is_working = True
+        action = "clock_out"
 
     # データが設定されていない場合は終了
-    if not is_working:
+    if not action:
         return
 
-    # スプレッドシートに書き込み
+    # API(FastAPI)に送信してデータベースに書き込み
     try:
-        if is_working:
-            time = get_current_time()
-            await message.channel.send(f"おはよう！{time}に出勤したよ！{message.author}")
-            
-        elif is_working:
-            time = get_current_time()
-            await message.channel.send(f"お疲れs！{time}に退勤したよ！")
+        now = datetime.now()
+        # APIに送るための「箱」を作成
+        data_box = {
+            "index": 0,
+            "member_id": message.author.id,
+            "date": now.strftime("%Y-%m-%d"),
+            "start_time": now.isoformat(), # Pydanticのエラーを防ぐため、退勤時も一旦今の時間をダミーで入れる
+            "end_time": now.isoformat() if action == "clock_out" else None
+        }
+        
+        API_URL = f"http://127.0.0.1:8000/{action}"
+        
+        # aiohttpを使ってFastAPIにリクエストを送信
+        async with aiohttp.ClientSession() as session:
+            async with session.post(API_URL, json=data_box) as response:
+                if response.status == 200:
+                    time_str = now.strftime("%H:%M")
+                    if action == "clock_in":
+                        await message.channel.send(f"おはよう！{time_str}に出勤したよ！{message.author.mention}")
+                    else:
+                        await message.channel.send(f"お疲れ様！{time_str}に退勤したよ！{message.author.mention}")
+                    await message.add_reaction("✅")
+                else:
+                    await message.channel.send(f"エラーが発生しました... (ステータスコード: {response.status})")
+                    await message.add_reaction("❌")
 
     except Exception as e:
         print(f"err: {e}")
+        await message.add_reaction("❌")
 
 # ユーザーのボイスチャンネル入室時刻を一時保存する辞書
 voice_active_users = {}
@@ -141,32 +161,57 @@ async def on_voice_state_update(member, before, after):
     send_text_channel = client.get_channel(TARGET_CHANNEL_ID)
     
     # --- 出勤の判定（画面共有を開始したとき） ---
-    # ボイスチャンネルに入っていて、画面共有が False -> True になったとき
-    # かつ、まだ出勤記録がない場合のみ記録する
     if after.channel is not None and not before.self_stream and after.self_stream:
         if member.id not in voice_active_users:
-            time_in = get_current_time()
+            now = datetime.now()
+            time_in = now.strftime("%H:%M")
             voice_active_users[member.id] = time_in
-            await send_text_channel.send(f"{member}君、おはよう！{time_in}に出勤したよ！")
+            
+            # APIに送信
+            data_box = {
+                "index": 0,
+                "member_id": member.id,
+                "date": now.strftime("%Y-%m-%d"),
+                "start_time": now.isoformat(),
+                "end_time": None
+            }
+            try:
+                async with aiohttp.ClientSession() as session:
+                    await session.post("http://127.0.0.1:8000/clock_in", json=data_box)
+            except Exception as e:
+                print(f"Voice clock_in api error: {e}")
+                
+            await send_text_channel.send(f"{member.mention}君、おはよう！{time_in}に出勤したよ！")
 
     # --- 退勤の判定（ボイスチャンネルから退出、または画面共有を終了したとき） ---
-    # すでに出勤記録があるユーザーが、
-    # ボイスチャンネルから完全に退出した（after.channel is None）か、
-    # または、画面共有が True -> False になったとき
     elif member.id in voice_active_users:
         is_checkout = False
         
-        # ボイスチャンネルから完全に退出したとき
         if after.channel is None:
             is_checkout = True
-        # ボイスチャンネルには残っているが、画面共有を終了したとき
         elif before.self_stream and not after.self_stream:
             is_checkout = True
             
         if is_checkout:
-            time_out = get_current_time()
+            now = datetime.now()
+            time_out = now.strftime("%H:%M")
             time_in = voice_active_users.pop(member.id, None)
-            await send_text_channel.send(f"{member}君、お疲れ！{time_out}に退勤したよ！（出勤時間: {time_in}）")
+            
+            # APIに送信
+            data_box = {
+                "index": 0,
+                "member_id": member.id,
+                "date": now.strftime("%Y-%m-%d"),
+                "start_time": now.isoformat(),
+                "end_time": now.isoformat()
+            }
+            try:
+                async with aiohttp.ClientSession() as session:
+                    await session.post("http://127.0.0.1:8000/clock_out", json=data_box)
+            except Exception as e:
+                print(f"Voice clock_out api error: {e}")
+                
+            await send_text_channel.send(f"{member.mention}君、お疲れ！{time_out}に退勤したよ！（出勤時間: {time_in}）")
     
 
 

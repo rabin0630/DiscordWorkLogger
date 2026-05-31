@@ -7,10 +7,10 @@ load_dotenv()
 
 ## MYSQL_INFO
 MYSQL_INFO = {
-    'USER': os.getenv('DB_USER'),
-    'PASSWORD': os.getenv('PASSWORD'),
-    'HOST': os.getenv('HOST'),
-    'DATABASE': os.getenv('DATABASE')
+    'USER': os.getenv('MYSQL_USER'),
+    'PASSWORD': os.getenv('MYSQL_PASSWORD'),
+    'HOST': os.getenv('MYSQL_HOST'),
+    'DATABASE': os.getenv('MYSQL_DATABASE')
 }
 
 ## DISCORD_BOT_CONFIG
