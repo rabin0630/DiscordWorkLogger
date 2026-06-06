@@ -13,7 +13,6 @@ param:<各カラムの説明。それぞれのカラムについて説明する>
 <カラムの簡単な説明>
 """
 
-###AttendanceRecord
 class AttendanceRecord(BaseModel):
     """ 
     出退勤を管理するテーブル
@@ -40,11 +39,10 @@ class AttendanceRecord(BaseModel):
     class Config:
       orm_mode = True
 
-
-###MonthlySummary
 class MonthlySummary(BaseModel):
     """
     1ヶ月分の勤怠情報を集約するテーブル
+    
     1行で1人の1ヶ月分の勤怠情報を表す
 
     param:
@@ -64,6 +62,26 @@ class MonthlySummary(BaseModel):
     year_month     : str
     total_work_time: Optional[datetime.timedelta]
     work_sessions  : Optional[int]
+
+    class Config:
+      orm_mode = True
+
+class TimerInfo(BaseModel):
+    """
+    タイマー情報のテーブル
+    各メンバーのタイマー情報を保持する
+
+    param:
+    member_id      : int
+        メンバーID。外部キーでMemberテーブルを参照
+    is_active       : bool
+        タイマーが有効かどうか。Trueの場合は有効、Falseの場合は無効
+    end_time        : Optional[datetime.datetime]
+        終了時間。2026-06-05 18:00。未設定の場合はNULL
+    """
+    member_id     : int
+    is_active     : bool
+    end_time      : Optional[datetime.datetime]
 
     class Config:
       orm_mode = True
