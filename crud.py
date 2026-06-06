@@ -5,6 +5,22 @@ from sqlalchemy.orm import Session
 
 # データベースの操作をする
 
+
+### Createをするときの流れ
+"""
+1. modelsからモデルをimport
+2. schemasからモデルをimport
+3. Sessionをimport
+4. SessionからSession_factoryをimport
+5. Session_factoryからsessionをimport
+6. models.Base.metadata.create_all(bind=engine)
+
+7. {}.pyから{}_infoをimport
+8. {}.pyから{}_infoをimport
+
+
+"""
+
 ## Create (出勤時)
 def stamp_clock_in(db: Session, attendance_record: schemas.AttendanceRecord):
   data_base = models.AttendanceRecords(
@@ -16,6 +32,18 @@ def stamp_clock_in(db: Session, attendance_record: schemas.AttendanceRecord):
   db.commit()
   db.refresh(data_base)
   return data_base
+
+def start_timer(db: Session, timer_info: schemas.TimerInfo):
+    data_base = models.TimerInfo(
+        member_id = timer_info.member_id,
+        is_active = timer_info.is_active,
+        end_time = timer_info.end_time,
+        remaining_time = timer_info.remaining_time
+    )
+    db.add(data_base)
+    db.commit()
+    db.refresh(data_base)
+    return data_base
 
 ## Update (退勤時)
 def stamp_clock_out(db: Session, attendance_record: schemas.AttendanceRecord):

@@ -1,45 +1,84 @@
+from database import user
 from discord import app_commands
 import asyncio
 import os
 import discord
+import datetime
+import aiohttp
+from schemas import TimerInfo
 from dotenv import load_dotenv
 
 # envファイル取得
 load_dotenv()
 
-DISCORD_TOKEN: str = os.getenv("DISCORD_TOKEN")
-TARGET_GUILD_ID: int = int(os.getenv("TARGET_GUILD_ID"))
+DISCORD_TOKEN: str     = os.getenv("DISCORD_TOKEN")
+TARGET_GUILD_ID: int   = int(os.getenv("TARGET_GUILD_ID"))
 TARGET_CHANNEL_ID: int = int(os.getenv("TARGET_CHANNEL_ID"))
+API_URL: str           = os.getenv("API_URL")
 
 # 初期設定
-intents = discord.Intents.default()
-intents.messages = True  # メッセージを取得する
-intents.message_content = True  # メッセージ内容を取得する
-intents.voice_states = True 
-activity = discord.Game("タイマー") # botのステータス
-client = discord.Client(intents=intents, activity=activity, status=discord.Status.online)
-command = app_commands.CommandTree(client)
+class MyIntents(discord.Intents):
+    def __init__(self,messages=True,message_content=True,voice_states=True):
+        super().__init__()
+        self.messages            = messages  # メッセージを取得する
+        self.message_content     = message_content  # メッセージ内容を取得する
+        self.voice_states        = voice_states 
 
-# ユーザーごとのタイマータスクを管理する辞書
-active_timer_tasks = {}
+intents                     = MyIntents()
+
+activity                    = discord.Game("タイマー") # botのステータス
+client                  = discord.Client(intents=intents, activity=activity, status=discord.Status.online)
+command                 = app_commands.CommandTree(client)
+
+
+
+
+class Base_Model_Timer:
+    
+    active_timer_tasks      :dict           = {} # タイマーを管理する辞書
+    sleep_time              : int           = 60
+
+    def __init__(self,user:discord.User,minutes:int):
+        self.user               : discord.User             = user 
+        self.is_active          : bool                     = False
+        self.minutes            : int                      = minutes
+        self.remaining_time     : int                      = minutes * self.sleep_time
+
+    async def  start(self,channel: discord.abc.Messageable):
+        try:
+            self.is_active = True
+            self.remaining_time = self.minutes * self.sleep_time
+            self.end_time=datetime.datetime.now() + datetime.timedelta(minutes=self.minutes)
+
+            while self.remaining_time > 0:
+                await asyncio.sleep(self.sleep_time)
+                self.remaining_time -= self.sleep_time
+            await channel.send(f"{self.user.mention} {self.minutes}分経過しました！")
+            await client.change_presence(activity=discord.Game(name=f"タイマー"))
+        except asyncio.CancelledError: # tryの中でエラーが起きた場合の処理
+            pass
+        finally: # tryが成功しても失敗しても最後に必ず実行される処理
+            Base_Model_Timer.active_timer_tasks.pop(self.user.id, None)
+
+
+
 
 # タイマー関数
 async def run_custom_timer(user: discord.User, channel: discord.abc.Messageable, minutes: int):
     try:
+        # seconds計算
         second = minutes * 60
+        
         while second > 0:
-            # discordのステータスに表示
-            await client.change_presence(activity=discord.Game(name=f"残り {minutes}分"))
-            
-            
             sleep_time = 60
             await asyncio.sleep(sleep_time)
             second -= sleep_time
+        
         await channel.send(f"{user.mention} {minutes}分経過しました！")
         await client.change_presence(activity=discord.Game(name=f"タイマー"))
-    except asyncio.CancelledError:
+    except asyncio.CancelledError: # tryの中でエラーが起きた場合の処理
         pass
-    finally:
+    finally: # tryが成功しても失敗しても最後に必ず実行される処理
         active_timer_tasks.pop(user.id, None)
 
 # ポモドーロタイマー関数
@@ -77,18 +116,18 @@ async def hello_command(interaction: discord.Interaction):
 async def timer_command(interaction: discord.Interaction, minutes:int):
     user = interaction.user # インスタンスのコピー
     
-    # ガード節：既存のタイマーがあれば停止する
-    if user.id in active_timer_tasks:
-        old_task = active_timer_tasks[user.id]
-        old_task.cancel()
+    timer = Base_Model_Timer(user=user,minutes=int(minutes))
+    
+    if Base_Model_Timer.active_timer_tasks.get(user.id):
+        timer.cancel()
 
     # レスポンス
     await interaction.response.send_message(f"{user.mention} タイマーを {minutes}分 にセットしました！")
     
     # タイマー起動
     ## 辞書にタイマーを起動したことをtaskとして記入。
-    task = asyncio.create_task(run_custom_timer(user, interaction.channel, minutes)) 
-    active_timer_tasks[user.id] = task
+    task = asyncio.create_task(timer.start(interaction.channel)) 
+    Base_Model_Timer.active_timer_tasks[user.id] = task
     
 
 

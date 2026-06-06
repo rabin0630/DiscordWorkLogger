@@ -77,14 +77,17 @@ class TimerInfo(Base):
     is_active       : bool
         タイマーが有効かどうか。Trueの場合は有効、Falseの場合は無効
     end_time        : Optional[datetime.datetime]
-        終了時間。2026-06-05 18:00。未設定の場合はNULL
+        終了時間。2026-06-05 18:00。
+    remaining_time  : Optional[int]
+        残り秒数。一時停止をした時などに使用。Noneの場合はNULL
     """
 
     __tablename__   = "timer_info"
 
     member_id       = Column(BigInteger, primary_key=True, unique=True)
     is_active       = Column(Boolean, default=False)
-    end_time        = Column(DateTime, nullable=True)
+    end_time        = Column(DateTime)
+    remaining_time  = Column(Integer, nullable=True)
     
 
 

@@ -71,44 +71,6 @@ async def on_message(message):
     if message.channel.id != TARGET_CHANNEL_ID:
         return
 
-    # ユーザー ID に基づいて スプレッドシートID を取得
-    user_id = str(message.author.id)  # ユーザー ID を文字列に変換
-    
-
-    # --- タイマーコマンドの処理 ---
-    if message.content.startswith("/timer "):
-        cmd_parts = message.content.split()
-        if len(cmd_parts) >= 2:
-            arg = cmd_parts[1]
-            if arg == "stop":
-                task = active_timer_tasks.get(message.author.id)
-                if task:
-                    task.cancel()
-                    await message.channel.send(f"{message.author.mention} タイマーを停止しました。")
-                else:
-                    await message.channel.send(f"{message.author.mention} 実行中のタイマーはありません。")
-                return
-            elif arg.isdigit():
-                minutes = int(arg)
-                old_task = active_timer_tasks.get(message.author.id)
-                if old_task:
-                    old_task.cancel()
-                
-                await message.channel.send(f"{message.author.mention} タイマーを {minutes}分 にセットしました！")
-                task = asyncio.create_task(run_simple_timer(message.author, message.channel, minutes))
-                active_timer_tasks[message.author.id] = task
-                return
-
-    elif message.content == "/pomodoro timer":
-        old_task = active_timer_tasks.get(message.author.id)
-        if old_task:
-            old_task.cancel()
-            
-        await message.channel.send(f"{message.author.mention} ポモドーロタイマー開始！25分間の作業に集中しましょう！")
-        task = asyncio.create_task(run_pomodoro_timer(message.author, message.channel))
-        active_timer_tasks[message.author.id] = task
-        return
-
     # メッセージ内容に応じてアクションを設定
     action = None
     if "おはよう" in message.content:

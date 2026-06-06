@@ -40,3 +40,8 @@ async def create_attendance_record(attendance_record: schemas.AttendanceRecord, 
 @app.post('/clock_out')
 async def update_attendance_record(attendance_record: schemas.AttendanceRecord, db: Session = Depends(get_db)):
   return crud.stamp_clock_out(db, attendance_record)
+
+### 3. タイマースタート
+@app.post('/timer_start')
+async def timer_start(timer_info: schemas.TimerInfo, db: Session = Depends(get_db)):
+  return crud.start_timer(db, timer_info)
