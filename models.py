@@ -28,4 +28,5 @@ class MonthlySummary(Base):
     year_month = Column(String(6))
     total_work_time = Column(DateTime, nullable=True)
     work_sessions = Column(Integer, nullable=True)
-    
+
+

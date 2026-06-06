@@ -13,9 +13,10 @@ TARGET_CHANNEL_ID: int = int(os.getenv("TARGET_CHANNEL_ID"))
 
 # 初期設定
 intents = discord.Intents.default()
-intents.messages = True  
-intents.message_content = True
-activity = discord.Game("タイマー")
+intents.messages = True  # メッセージを取得する
+intents.message_content = True  # メッセージ内容を取得する
+intents.voice_states = True 
+activity = discord.Game("タイマー") # botのステータス
 client = discord.Client(intents=intents, activity=activity, status=discord.Status.online)
 command = app_commands.CommandTree(client)
 
@@ -25,8 +26,17 @@ active_timer_tasks = {}
 # タイマー関数
 async def run_custom_timer(user: discord.User, channel: discord.abc.Messageable, minutes: int):
     try:
-        await asyncio.sleep(minutes * 60)
+        second = minutes * 60
+        while second > 0:
+            # discordのステータスに表示
+            await client.change_presence(activity=discord.Game(name=f"残り {minutes}分"))
+            
+            
+            sleep_time = 60
+            await asyncio.sleep(sleep_time)
+            second -= sleep_time
         await channel.send(f"{user.mention} {minutes}分経過しました！")
+        await client.change_presence(activity=discord.Game(name=f"タイマー"))
     except asyncio.CancelledError:
         pass
     finally:
@@ -53,18 +63,37 @@ async def run_pomodoro_timer(user: discord.User, channel: discord.abc.Messageabl
 # 起動時
 async def on_ready():
     print(f"Timer Bot Logged in as {client.user}!")
+    command.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
     await command.sync(guild=discord.Object(id=TARGET_GUILD_ID))
 
 # スラッシュコマンドの定義
 @command.command(name="hello", description="挨拶を返します")
 async def hello_command(interaction: discord.Interaction):
     await interaction.response.send_message("こんにちは！")
+    await client.change_presence(activity=discord.Game(name="ステータスメッセージだよ"))
 
 
-@command.command(name="timer", description="タイマーをセットします")
-async def timer_command(interaction: discord.Interaction, ):
+@command.command(name="timer", description="指定された時間のタイマーをセットします")
+async def timer_command(interaction: discord.Interaction, minutes:int):
+    user = interaction.user # インスタンスのコピー
     
+    # ガード節：既存のタイマーがあれば停止する
+    if user.id in active_timer_tasks:
+        old_task = active_timer_tasks[user.id]
+        old_task.cancel()
+
+    # レスポンス
+    await interaction.response.send_message(f"{user.mention} タイマーを {minutes}分 にセットしました！")
+    
+    # タイマー起動
+    ## 辞書にタイマーを起動したことをtaskとして記入。
+    task = asyncio.create_task(run_custom_timer(user, interaction.channel, minutes)) 
+    active_timer_tasks[user.id] = task
+    
+
+
 # メッセージ受信時
+@client.event
 async def on_message(message):
     # botのメッセージは無視
     if message.author.bot:
