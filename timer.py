@@ -4,6 +4,7 @@ import asyncio
 import os
 import discord
 import datetime
+import random
 import aiohttp
 from schemas import TimerInfo
 from dotenv import load_dotenv
@@ -31,55 +32,127 @@ client                  = discord.Client(intents=intents, activity=activity, sta
 command                 = app_commands.CommandTree(client)
 
 
-
-
-class Base_Model_Timer:
+class Timer:
     
-    active_timer_tasks      :dict           = {} # タイマーを管理する辞書
-    sleep_time              : int           = 60
+    TIMER_SET_MESSAGES = [
+        "{mention} {minutes}分のタイマーをセットしたのだ！頑張るのだ！",
+        "{mention} {minutes}分後に教えるのだ！集中するのだー！",
+        "{mention} タイマーセット完了なのだ！{minutes}分後にまた会おうなのだ！",
+        "{mention} {minutes}分、ボクがしっかり計っておくのだ！",
+        "{mention} よーいスタートなのだ！{minutes}分の勝負なのだ！",
+        "{mention} {minutes}分間の集中タイムなのだ！ずんだ餅でも食べながら待つといいのだ！",
+        "{mention} {minutes}分後に呼びにくるのだ！ずんだアロー！",
+        "{mention} ばっちり{minutes}分でセットしたのだ！ボクに任せるのだ！",
+        "{mention} {minutes}分間のミッション開始なのだ！",
+        "{mention} タイマーを{minutes}分でセットなのだ！一緒に頑張るのだ！"
+    ]
 
-    def __init__(self,user:discord.User,minutes:int):
-        self.user               : discord.User             = user 
-        self.is_active          : bool                     = False
-        self.minutes            : int                      = minutes
-        self.remaining_time     : int                      = minutes * self.sleep_time
+    TIMER_END_MESSAGES = [
+        "{mention} {minutes}分経過したのだ！お疲れ様なのだ！",
+        "{mention} 時間なのだー！{minutes}分やりきったのだ！",
+        "{mention} ピピピピ！{minutes}分経ったのだ！休憩するのだ！",
+        "{mention} {minutes}分経過！ずんだ餅でも食べて休むのだ！",
+        "{mention} 約束の{minutes}分が経ったのだ！ボクを褒めるのだ！",
+        "{mention} お時間なのだ！{minutes}分間よく頑張ったのだ！",
+        "{mention} 終了なのだ！{minutes}分のタイマーが鳴っているのだ！",
+        "{mention} {minutes}分達成なのだ！次もボクに任せるのだ！",
+        "{mention} タイムアップなのだ！{minutes}分間お見事なのだ！",
+        "{mention} カンカンカン！{minutes}分経過なのだ！頑張ったのだ！"
+    ]
 
-    async def  start(self,channel: discord.abc.Messageable):
+    TIMER_ALREADY_ACTIVE_MESSAGES = [
+        "タイマーはすでに起動しているのだ！終わるまで待つのだ！",
+        "今はもうタイマーが動いているのだ！焦らないで待つといいのだ！",
+        "すでにセット済みだぞ！落ち着いて集中するのだ！",
+        "タイマーはもう走っているのだ！止まるまでずんだ餅でも食べてるのだ！",
+        "今測っている途中なのだ！上書きはできないのだー！"
+    ]
+
+    TIMER_NOT_ACTIVE_MESSAGES = [
+        "{mention} タイマーは起動していないのだ！まずはセットするのだ！",
+        "{mention} まだタイマーが動いてないみたいなのだ。セットしてほしいのだ！",
+        "{mention} 今は何も測ってないのだ！/timer で呼び出すのだ！",
+        "{mention} ボクは今お休み中なのだ。時間を指定してセットするのだー！",
+        "{mention} 動いてるタイマーは見つからなかったのだ！新しく作るのだ！"
+    ]
+
+    TIMER_REMAINING_MESSAGES = [
+        "{mention} 残り時間は {minutes}分{seconds}秒なのだ！",
+        "{mention} あと {minutes}分{seconds}秒残っているのだ！頑張るのだ！",
+        "{mention} 残りは {minutes}分{seconds}秒なのだ！もうちょっとの辛抱なのだ！",
+        "{mention} あと {minutes}分{seconds}秒で終わるのだ！ファイトなのだ！",
+        "{mention} ボクの計算だと、あと {minutes}分{seconds}秒なのだ！集中するのだー！"
+    ]
+
+
+    active_timer_tasks      :dict           = {} # タイマーを管理する簡易的なデータベース
+    # {user_id: {is_active: bool, end_time: datetime, remaining_time: int}}
+
+    sleep_time              : int           = 60 # 1回のループで減らす秒数
+
+    def __init__(self,interaction:discord.Interaction,minutes:int=0):
+        self.user            : discord.User                 = interaction.user 
+        self.is_active       : bool                         = False
+        self.minutes         : int                          = minutes
+        self.remaining_time  : int                          = minutes * self.sleep_time
+        self.channel         : discord.abc.Messageable      = interaction.channel
+        self.interaction     : discord.Interaction          = interaction
+
+    async def register_timer(self,user_id:int,is_active:bool,end_time:datetime,remaining_time:int):
+        self.active_timer_tasks[user_id] = {
+            "is_active": is_active,
+            "end_time": end_time,
+            "remaining_time": remaining_time
+        }
+    
+    async def update_remaining_time(self,user_id:int,remaining_time:int):
+        self.active_timer_tasks[user_id]["remaining_time"] = remaining_time
+        
+    async def run(self):
+        if self.active_timer_tasks.get(self.user.id):
+            message = random.choice(self.TIMER_ALREADY_ACTIVE_MESSAGES)
+            await self.interaction.response.send_message(message)
+        else:
+            self.task = asyncio.create_task(self.start())
+
+    async def  start(self):
         try:
-            self.is_active = True
-            self.remaining_time = self.minutes * self.sleep_time
-            self.end_time=datetime.datetime.now() + datetime.timedelta(minutes=self.minutes)
+            self.is_active      = True
+            self.remaining_time = self.minutes * 60
+            self.end_time       = datetime.datetime.now() + datetime.timedelta(minutes=self.minutes)
+
+            await self.register_timer(self.user.id,self.is_active,self.end_time,self.remaining_time)
+
+            message = random.choice(self.TIMER_SET_MESSAGES).format(mention=self.user.mention, minutes=self.minutes)
+            await self.interaction.response.send_message(message)
 
             while self.remaining_time > 0:
-                await asyncio.sleep(self.sleep_time)
-                self.remaining_time -= self.sleep_time
-            await channel.send(f"{self.user.mention} {self.minutes}分経過しました！")
-            await client.change_presence(activity=discord.Game(name=f"タイマー"))
+                await asyncio.sleep(1)
+                self.remaining_time -= 1
+                await self.update_remaining_time(self.user.id,self.remaining_time)
+            message = random.choice(self.TIMER_END_MESSAGES).format(mention=self.user.mention, minutes=self.minutes)
+            await self.channel.send(message)
+            
         except asyncio.CancelledError: # tryの中でエラーが起きた場合の処理
             pass
         finally: # tryが成功しても失敗しても最後に必ず実行される処理
-            Base_Model_Timer.active_timer_tasks.pop(self.user.id, None)
-
-
-
-
-# タイマー関数
-async def run_custom_timer(user: discord.User, channel: discord.abc.Messageable, minutes: int):
-    try:
-        # seconds計算
-        second = minutes * 60
+            self.active_timer_tasks.pop(self.user.id, None)
+    
+    async def show(self):
+        if not self.active_timer_tasks.get(self.user.id):
+            message = random.choice(self.TIMER_NOT_ACTIVE_MESSAGES).format(mention=self.user.mention)
+            await self.interaction.response.send_message(message)
+            return
+            
+        remaining_time :int= self.active_timer_tasks[self.user.id]['remaining_time']
+        minutes        :int= remaining_time // 60
+        seconds        :int= remaining_time % 60
         
-        while second > 0:
-            sleep_time = 60
-            await asyncio.sleep(sleep_time)
-            second -= sleep_time
-        
-        await channel.send(f"{user.mention} {minutes}分経過しました！")
-        await client.change_presence(activity=discord.Game(name=f"タイマー"))
-    except asyncio.CancelledError: # tryの中でエラーが起きた場合の処理
-        pass
-    finally: # tryが成功しても失敗しても最後に必ず実行される処理
-        active_timer_tasks.pop(user.id, None)
+        message = random.choice(self.TIMER_REMAINING_MESSAGES).format(mention=self.user.mention, minutes=minutes, seconds=seconds)
+        await self.interaction.response.send_message(message)
+
+
+
 
 # ポモドーロタイマー関数
 async def run_pomodoro_timer(user: discord.User, channel: discord.abc.Messageable):
@@ -105,80 +178,20 @@ async def on_ready():
     command.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
     await command.sync(guild=discord.Object(id=TARGET_GUILD_ID))
 
-# スラッシュコマンドの定義
-@command.command(name="hello", description="挨拶を返します")
-async def hello_command(interaction: discord.Interaction):
-    await interaction.response.send_message("こんにちは！")
-    await client.change_presence(activity=discord.Game(name="ステータスメッセージだよ"))
 
 
 @command.command(name="timer", description="指定された時間のタイマーをセットします")
 async def timer_command(interaction: discord.Interaction, minutes:int):
-    user = interaction.user # インスタンスのコピー
+    timer = Timer(interaction=interaction,minutes=minutes)
     
-    timer = Base_Model_Timer(user=user,minutes=int(minutes))
+    await timer.run()
+
+@command.command(name="timer_show", description="タイマーを表示します")
+async def timer_show(interaction: discord.Interaction):
+    timer = Timer(interaction=interaction)
     
-    if Base_Model_Timer.active_timer_tasks.get(user.id):
-        timer.cancel()
+    await timer.show()
 
-    # レスポンス
-    await interaction.response.send_message(f"{user.mention} タイマーを {minutes}分 にセットしました！")
-    
-    # タイマー起動
-    ## 辞書にタイマーを起動したことをtaskとして記入。
-    task = asyncio.create_task(timer.start(interaction.channel)) 
-    Base_Model_Timer.active_timer_tasks[user.id] = task
-    
-
-
-# メッセージ受信時
-@client.event
-async def on_message(message):
-    # botのメッセージは無視
-    if message.author.bot:
-        return
-
-    # 指定したサーバー以外は無視
-    if message.guild.id != TARGET_GUILD_ID:
-        return
-
-    # 指定したチャンネル以外は無視
-    if message.channel.id != TARGET_CHANNEL_ID: 
-        return
-
-    # --- タイマーコマンドの処理 ---
-    if message.content.startswith("/timer "):
-        cmd_parts = message.content.split()
-        if len(cmd_parts) >= 2:
-            arg = cmd_parts[1]
-            if arg == "stop":
-                task = active_timer_tasks.get(message.author.id)
-                if task:
-                    task.cancel()
-                    await message.channel.send(f"{message.author.mention} タイマーを停止しました。")
-                else:
-                    await message.channel.send(f"{message.author.mention} 実行中のタイマーはありません。")
-                return
-            elif arg.isdigit():
-                minutes = int(arg)
-                old_task = active_timer_tasks.get(message.author.id)
-                if old_task:
-                    old_task.cancel()
-                
-                await message.channel.send(f"{message.author.mention} タイマーを {minutes}分 にセットしました！")
-                task = asyncio.create_task(run_custom_timer(message.author, message.channel, minutes))
-                active_timer_tasks[message.author.id] = task
-                return
-
-    elif message.content == "/pomodoro timer":
-        old_task = active_timer_tasks.get(message.author.id)
-        if old_task:
-            old_task.cancel()
-            
-        await message.channel.send(f"{message.author.mention} ポモドーロタイマー開始！25分間の作業に集中しましょう！")
-        task = asyncio.create_task(run_pomodoro_timer(message.author, message.channel))
-        active_timer_tasks[message.author.id] = task
-        return
 
 # ボットを起動
 if DISCORD_TOKEN:
