@@ -1,4 +1,3 @@
-from database import user
 from discord import app_commands
 import asyncio
 import os
@@ -9,6 +8,7 @@ import aiohttp
 from schemas import TimerInfo
 from dotenv import load_dotenv
 
+# NOTE
 ## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
 ## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
 
@@ -200,7 +200,7 @@ class Timer:
 
         """
         # 1.既にタイマーが起動しているかチェック
-
+        print(self.minutes)
         if self.timer_tasks.get(self.user.id):  # すでに起動している場合は終了
             message = random.choice(self.TIMER_ALREADY_ACTIVE_MESSAGES)
             await self.interaction.response.send_message_from_list(message)
@@ -220,9 +220,7 @@ class Timer:
             await self.interaction.response.send_message(message)
             print("3までいけた")
             # 4. countdownをバックグラウンドで実行
-            self.task = asyncio.create_task(
-                self.countdown(self.TIMER_END_MESSAGES)
-            )
+            self.task = asyncio.create_task(self.countdown(self.TIMER_END_MESSAGES))
             print("4までいけた")
 
         except asyncio.CancelledError:  # tryの中でエラーが起きた場合の処理
@@ -272,9 +270,9 @@ class Timer:
         message:list[str]
             メッセージ
         """
-        if not list_message: # リストが空だったら終了
+        if not list_message:  # リストが空だったら終了
             return print("メッセージが渡されませんでした")
-        
+
         # メッセージをランダムで選択し、メンションして送信する
         message = random.choice(list_message)
         message = message.format(mention=self.user.mention, minutes=self.minutes)
@@ -289,7 +287,7 @@ class Timer:
         if not self.timer_tasks.get(self.user.id):
             return print("タイマーが起動していません")
 
-        self.timer_tasks.pop(self.user.id) #popは指定したキーを辞書から削除する
+        self.timer_tasks.pop(self.user.id)  # popは指定したキーを辞書から削除する
         return
 
     # タイマーを開始する
@@ -322,7 +320,9 @@ class Timer:
                 print(self.remaining_time)
                 await asyncio.sleep(1)
                 self.remaining_time -= 1
-                await self.update_remaining_time(self.user.id, self.remaining_time) # 辞書のremaining_timeを更新
+                await self.update_remaining_time(
+                    self.user.id, self.remaining_time
+                )  # 辞書のremaining_timeを更新
 
             # 3.カウントダウン終了後にメッセージを送信
             message = self.select_and_format_message(end_message)
@@ -337,7 +337,7 @@ class Timer:
             self.kill_timer()
 
     # タイマーを表示する
-    async def show(self): 
+    async def show(self):
         """
         タイマーを表示する
         remaining_time(秒数)を分と秒に変換して表示
@@ -350,12 +350,16 @@ class Timer:
 
         # タイマーのremaining_timeを分と秒に変換
         remaining_time: int = self.timer_tasks[self.user.id]["remaining_time"]
-        minutes       : int = remaining_time // 60
-        seconds       : int = remaining_time % 60
+        minutes: int = remaining_time // 60
+        seconds: int = remaining_time % 60
 
         # メッセージを送信
-        message = random.choice(self.TIMER_REMAINING_MESSAGES) # この時点で変数を埋めてない
-        format_message = message.format(mention=self.user.mention, minutes=minutes, seconds=seconds)
+        message = random.choice(
+            self.TIMER_REMAINING_MESSAGES
+        )  # この時点で変数を埋めてない
+        format_message = message.format(
+            mention=self.user.mention, minutes=minutes, seconds=seconds
+        )
         await self.interaction.response.send_message(format_message)
 
     async def stop(self):
@@ -414,6 +418,10 @@ async def on_ready():
 
 @command.command(name="timer", description="指定された時間のタイマーをセットします")
 async def timer_command(interaction: discord.Interaction, minutes: int):
+    print(minutes)
+    if minutes < 0:
+        print("shit")
+        return
     timer = Timer(interaction=interaction, minutes=minutes)
     await timer.run()
 
