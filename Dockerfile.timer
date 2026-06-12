@@ -1,0 +1,34 @@
+#NOTES
+## 1.docker build -f Dockerfile.timer -t timer . でイメージを作成する
+#### buildの-fオプションはDockerfileの格納パスを指定する（オプション）
+#### buildの-tオプションはイメージ名を指定する（オプション）
+
+## 2.docker imagesでイメージが作成されたかを確認
+
+## 3.docker create --env-file .env --name timer timer でイメージからコンテナの状態にする
+#### createの--nameオプションはコンテナ名を指定する（オプション）
+
+## 4.docker ps -aで作成したコンテナを確認
+#### psの-aオプションはコンテナをすべて表示する（オプション）
+
+## 5.docker start timer でコンテナを起動
+
+
+### docker runの--env-fileで環境変数を渡せる
+
+FROM python:3.13-slim
+
+WORKDIR /app
+ENV PYTHONUNBUFFERED=1
+
+
+# requirements.txtをコピーしてパッケージをインストール
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# timer.pyと、timer.pyからインポートされているschemas.pyをコンテナにコピー
+COPY timer.py .
+COPY schemas.py .
+
+# コンテナ起動時にtimer.pyを実行
+CMD ["python", "timer.py"]
