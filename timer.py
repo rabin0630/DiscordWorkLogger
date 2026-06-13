@@ -411,7 +411,7 @@ class Timer:
 @client.event
 # 起動時
 async def on_ready():
-    print(f"Timer Bot Logged in as {client.user}!")
+    print(f"Timer Bot Logged in as {client.user}!") # 確認
     command.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
     await command.sync(guild=discord.Object(id=TARGET_GUILD_ID))
 
