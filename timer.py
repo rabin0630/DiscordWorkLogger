@@ -1,16 +1,26 @@
+import logging
 from discord import app_commands
 import asyncio
 import os
 import discord
 import datetime
 import random
-import aiohttp
-from schemas import TimerInfo
 from dotenv import load_dotenv
+import logging
 
 # NOTE
 ## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
 ## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
+
+# ログの設定
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[
+        logging.FileHandler("timer_bot.log", encoding="utf-8"), # テキストファイルに保存する用
+        logging.StreamHandler() # 今まで通りターミナル（画面）にも出す用
+    ]
+)
 
 # envファイル取得
 load_dotenv()
@@ -29,11 +39,19 @@ API_URL: str = os.getenv("API_URL")
 ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
 
 class MyIntents(discord.Intents):
-    def __init__(self, messages=True, message_content=True, voice_states=True):
+    def __init__(self, 
+    messages=True, 
+    message_content=True, 
+    voice_states=True, 
+    guilds=True,
+    members=False):
+    
         super().__init__()
         self.messages        = messages
         self.voice_states    = voice_states
         self.message_content = message_content
+        self.guilds          = guilds
+        self.members         = members
 intents = MyIntents()
 
 client = discord.Client(
@@ -416,8 +434,8 @@ class Timer:
 @client.event
 # 起動時
 async def on_ready():
-    print(f"Timer Bot Logged in as {client.user}!") # 確認
-    print("再起動した!")
+    logging.info(f"Timer Bot Logged in as {client.user}!") # 確認
+    logging.info("起動しました!")
     command.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
     await command.sync(guild=discord.Object(id=TARGET_GUILD_ID))
 

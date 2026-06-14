@@ -3,9 +3,11 @@
 #### buildの-fオプションはDockerfileの格納パスを指定する（オプション）
 #### buildの-tオプションはイメージ名を指定する（オプション）
 
+## 1.5 今の古いコンテナを消す docker rm -f timer
+
 ## 2.docker imagesでイメージが作成されたかを確認
 
-## 3.docker create --env-file .env --name timer timer でイメージからコンテナの状態にする
+## 3.docker create --env-file .env -v $(pwd):/app --name timer timer でイメージからコンテナの状態にする
 #### createの--nameオプションはコンテナ名を指定する（オプション）
 
 ## 4.docker ps -aで作成したコンテナを確認
@@ -20,7 +22,7 @@ FROM python:3.13-slim
 
 WORKDIR /app
 ENV PYTHONUNBUFFERED=1
-
+ENV TZ=Asia/Tokyo
 
 # requirements.txtをコピーしてパッケージをインストール
 COPY requirements.txt .
