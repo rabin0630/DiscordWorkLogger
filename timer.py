@@ -403,11 +403,12 @@ class Timer:
     # タイマーを一時停止する
     async def pause(self):
         if not self.activated_timer_datas.get(self.user.id):  # タイマー起動していない場合
-            await self.interaction.response.send_message(self.TIMER_NOT_ACTIVE_MESSAGES)
+            message = random.choice(self.TIMER_NOT_ACTIVE_MESSAGES)
+            formatted_message = message.format(mention=self.user.mention)
+            await self.interaction.response.send_message(formatted_message)
             return
 
         self.activated_timer_datas[self.user.id]["is_active"] = False
-        print(self.activated_timer_datas[self.user.id]["is_active"])
         message = random.choice(self.TIMER_PAUSE_MESSAGES).format(
             mention=self.user.mention
         )
