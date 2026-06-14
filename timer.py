@@ -446,9 +446,8 @@ async def on_ready():
 
 @command.command(name="timer", description="指定された時間のタイマーをセットします")
 async def timer_command(interaction: discord.Interaction, minutes: int):
-    print(minutes)
+    logging.info("timerコマンドを使用しました。")
     if minutes < 0:
-        print("shit")
         return
     timer = Timer(interaction=interaction, minutes=minutes)
     await timer.run()
@@ -456,7 +455,7 @@ async def timer_command(interaction: discord.Interaction, minutes: int):
 
 @command.command(name="timer_show", description="タイマーを表示します")
 async def timer_show(interaction: discord.Interaction):
-    print("shit")
+    logging.info("showコマンドを使用しました。")
     timer = Timer(interaction=interaction)
 
     await timer.show()
@@ -464,6 +463,7 @@ async def timer_show(interaction: discord.Interaction):
 
 @command.command(name="timer_stop", description="タイマーを停止します")
 async def timer_stop(interaction: discord.Interaction):
+    logging.info("stopコマンドを使用しました。")
     timer = Timer(interaction=interaction)
 
     await timer.stop()
@@ -471,6 +471,7 @@ async def timer_stop(interaction: discord.Interaction):
 
 @command.command(name="timer_pause", description="タイマーを一時停止します")
 async def timer_pause(interaction: discord.Interaction):
+    logging.info("pauseコマンドを使用しました。")
     timer = Timer(interaction=interaction)
 
     await timer.pause()
@@ -478,6 +479,7 @@ async def timer_pause(interaction: discord.Interaction):
 
 @command.command(name="timer_pomodoro", description="ポモドーロタイマーをセットします")
 async def timer_pomodoro(interaction: discord.Interaction, sets: int = 4):
+    logging.info("pauseコマンドを使用しました。")
     timer = Timer(interaction=interaction)
     await timer.pomodoro_timer(sets)
 
