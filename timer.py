@@ -389,7 +389,9 @@ class Timer:
 
     async def stop(self):
         if not self.activated_timer_datas.get(self.user.id):  # タイマー起動していない場合
-            await self.interaction.response.send_message(self.TIMER_NOT_ACTIVE_MESSAGES)
+            message = random.choice(self.TIMER_NOT_ACTIVE_MESSAGES)
+            formatted_message = message.format(mention=self.user.mention)
+            await self.interaction.response.send_message(formatted_message)
             return
 
         message = random.choice(self.TIMER_STOP_MESSAGES)
