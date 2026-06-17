@@ -395,7 +395,7 @@ class Timer(commands.Cog):
         front_time = self.log_delay(interaction, "timer_pomodoro")
         user_id = interaction.user.id
         user_timer = self.activated_timer_data.get(user_id)
-        
+
         if user_timer:
             message = self.random_choice_format_list_message(self.TIMER_ALREADY_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
             await interaction.response.send_message(message)

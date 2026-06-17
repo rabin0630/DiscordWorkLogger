@@ -5,6 +5,7 @@ from settings_env import DISCORD_TOKEN,ACTIVITY,intents
 
 from dotenv import load_dotenv
 from timer import Timer
+from time_stamp_cog import Time_Stamp
 
 from discord.ext import commands
 # NOTE
@@ -59,8 +60,13 @@ async def on_ready():
     # 起動時
     print(f"Logged in as {bot.user}!")
     await bot.add_cog(Timer(bot))
+    await bot.add_cog(Time_Stamp(bot))
 
-
+    # グローバルコマンドを特定のサーバーにコピーして即時反映させるのだ！
+    target_guild = discord.Object(id=TARGET_GUILD_ID)
+    bot.tree.copy_global_to(guild=target_guild)
+    await bot.tree.sync(guild=target_guild)
+    print("コマンドの即時反映が完了したのだ！")
 
 
 
