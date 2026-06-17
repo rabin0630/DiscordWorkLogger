@@ -27,6 +27,7 @@ from discord.ext import commands
 ## classメソッドの入れ替え : 部品などを一番上にして、コマンドで使用するメソッドは一番下がわかりやすいかも
 ## **kwargsの意味を調べる
 ## テストコードを調べる
+## ファイルの分割をする;;;
 
 # FIXME
 
@@ -34,9 +35,6 @@ from discord.ext import commands
 
 # XXX
 ## pomodoro_timer : 不明
-
-# envファイル取得
-load_dotenv()
 
 # 最新のログが1番上に来るようにするカスタムハンドラ
 class ReverseFileHandler(logging.FileHandler):
@@ -77,7 +75,7 @@ env_mode = os.getenv("ENV")
 env = "TARGET" if env_mode == "prod" else "TEST"
 
 DISCORD_TOKEN: str = os.getenv(f"{env}_TOKEN")
-TARGET_GUILD_ID = int(os.getenv(f"{env}_GUILD_ID"))
+TARGET_GUILD_ID = os.getenv(f"{env}_GUILD_ID")
 
 # 初期設定
 ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
@@ -98,8 +96,6 @@ bot = commands.Bot(
     intents=intents,
     activity=ACTIVITY
 )
-
-command = app_commands.CommandTree(client)
 
 class Timer(commands.Cog):
 
@@ -514,6 +510,7 @@ class Timer(commands.Cog):
         except asyncio.CancelledError:
             print("ループが停止したのだ")
             self.kill_timer(user_id)
+
 @bot.event
 # 起動時
 async def on_ready():
