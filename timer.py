@@ -1,17 +1,36 @@
-import logging
-from discord import app_commands
-import asyncio
 import os
-import discord
-import datetime
+import asyncio
 import random
+import datetime
 from dotenv import load_dotenv
+
 import logging
 from logging import info
 
+import discord
+from discord import app_commands
+from discord.ext import commands
+
 # NOTE
+## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url
 ## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
 ## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
+## モノステート・パターンという設計パターンを使用しているらしい
+
+
+# TODO
+## classメソッドの入れ替え : 部品などを一番上にして、コマンドで使用するメソッドは一番下がわかりやすいかも
+## **kwargsの意味を調べる
+## テストコードを調べる
+
+# FIXME
+## pause_timer : タイマーが停止してしまう
+## resume_timer : タイマーを起動していると作動しない
+
+# HACK
+
+# XXX
+## pomodoro_timer : 不明
 
 # envファイル取得
 load_dotenv()
@@ -25,7 +44,6 @@ logging.basicConfig(
         logging.StreamHandler() # 今まで通りターミナル（画面）にも出す用
     ]
 )
-
 
 # TEST環境の時は引数TEST_TOKENとTEST_CHANNEL_IDに変更
 # (HACK)リファクタリングした方がいい。とてもみにくい
@@ -43,14 +61,21 @@ ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # bot
 intents = discord.Intents.default()
 intents.message_content = True
 
-
 client = discord.Client(
     status   = discord.Status.online,
     intents  = intents,
     activity = ACTIVITY
 )
-command = app_commands.CommandTree(client)
 
+# ClientからBotに変更
+bot = commands.Bot(
+    command_prefix="!", # プレフィックス型コマンド用（helloコマンド等）
+    status=discord.Status.online,
+    intents=intents,
+    activity=ACTIVITY
+)
+
+command = app_commands.CommandTree(client)
 
 class Timer:
 
@@ -390,6 +415,7 @@ class Timer:
         return
 
     # タイマーを一時停止する
+    ## FIXME:停止になる
     async def pause(self):
         user_timer = self.activated_timer_datas.get(self.user.id)
         if not user_timer:  # タイマー起動していない場合
@@ -403,6 +429,7 @@ class Timer:
         return
 
     # タイマーを再開する
+    ## FIXME:タイマー起動中は作動しない
     async def resume(self):
         user_timer = self.activated_timer_datas.get(self.user.id)
         if not user_timer:
@@ -419,14 +446,38 @@ class Timer:
         return
 
 
+class Greetings(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+        self._last_member = None
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member):
+        channel = member.guild.system_channel
+        if channel is not None:
+            await channel.send(f'Welcome {member.mention}.')
+
+    @commands.command()
+    async def hello(self, ctx, *, member: discord.Member = None):
+        """Says hello"""
+        member = member or ctx.author
+        if self._last_member is None or self._last_member.id != member.id:
+            await ctx.send(f'Hello {member.name}~')
+        else:
+            await ctx.send(f'Hello {member.name}... This feels familiar.')
+        self._last_member = member
+
+
 index = None if env_mode == "prod" else "_test"
 
 
-@client.event
+# @client.event
+@bot.event
 # 起動時
 async def on_ready():
     logging.info(f"Timer Bot Logged in as {client.user}!") # 確認
     logging.info("起動しました!")
+    await bot.add_cog(Greetings(bot))
     command.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
     await command.sync(guild=discord.Object(id=TARGET_GUILD_ID))
 
@@ -477,7 +528,10 @@ async def resume_timer(interaction: discord.Interaction):
     await timer.resume()
 
 # ボットを起動
-if DISCORD_TOKEN:
-    client.run(DISCORD_TOKEN)
-else:
-    print("DISCORD_TOKEN が .env ファイルに設定されていません。")
+if __name__ == "__main__":
+    if DISCORD_TOKEN:
+        #client.run(DISCORD_TOKEN)
+        bot.run(DISCORD_TOKEN)
+        
+    else:
+        print("DISCORD_TOKEN が .env ファイルに設定されていません。")
