@@ -1,70 +1,18 @@
-import logging
-from control_log import logging
 import time
 from datetime import datetime
-import os
 import asyncio
 import random
 import datetime
-from dotenv import load_dotenv
+from settings_env import env_mode
 
 import logging
 import time
 from datetime import datetime
-from logging import info
 
 import discord
-from discord import app_commands , Interaction
+from discord import app_commands
 from discord.ext import commands
 
-# NOTE
-## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url
-## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
-## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
-## モノステート・パターンという設計パターンを使用しているらしい
-
-
-# TODO
-## classメソッドの入れ替え : 部品などを一番上にして、コマンドで使用するメソッドは一番下がわかりやすいかも
-## **kwargsの意味を調べる
-## テストコードを調べる
-## ファイルの分割をする;;;
-
-# FIXME
-
-# HACK
-
-# XXX
-## pomodoro_timer : 不明
-
-
-# TEST環境の時は引数TEST_TOKENとTEST_CHANNEL_IDに変更
-# (HACK)リファクタリングした方がいい。とてもみにくい
-env_mode = os.getenv("ENV")
-env = "TARGET" if env_mode == "prod" else "TEST"
-
-DISCORD_TOKEN: str = os.getenv(f"{env}_TOKEN")
-TARGET_GUILD_ID = os.getenv(f"{env}_GUILD_ID")
-
-# 初期設定
-ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
-
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(
-    status   = discord.Status.online,
-    intents  = intents,
-    activity = ACTIVITY
-)
-
-# ClientからBotに変更
-bot = commands.Bot(
-    command_prefix="!", # プレフィックス型コマンド用（helloコマンド等）
-    status=discord.Status.online,
-    intents=intents,
-    activity=ACTIVITY
-)
 
 class Timer(commands.Cog):
 
@@ -479,22 +427,3 @@ class Timer(commands.Cog):
         except asyncio.CancelledError:
             print("ループが停止したのだ")
             self.kill_timer(user_id)
-
-@bot.event
-# 起動時
-async def on_ready():
-    logging.info(f"Timer Bot Logged in as {bot.user}!") # 確認
-    logging.info("起動しました!")
-
-    await bot.add_cog(Timer(bot))
-
-    bot.tree.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
-    await bot.tree.sync(guild=discord.Object(id=TARGET_GUILD_ID))
-
-# ボットを起動
-if __name__ == "__main__":
-    if DISCORD_TOKEN:
-        bot.run(DISCORD_TOKEN)
-        
-    else:
-        logging.warning("DISCORD_TOKEN が .env ファイルに設定されていません。")
