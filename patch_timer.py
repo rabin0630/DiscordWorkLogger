@@ -1,105 +1,10 @@
-import logging
-import os
-import asyncio
-import random
-import datetime
-from dotenv import load_dotenv
+import re
 
-import logging
-from logging import info
+with open("timer.py", "r") as f:
+    content = f.read()
 
-import discord
-from discord import app_commands , Interaction
-from discord.ext import commands
-
-# NOTE
-## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url
-## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
-## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
-## モノステート・パターンという設計パターンを使用しているらしい
-
-
-# TODO
-## classメソッドの入れ替え : 部品などを一番上にして、コマンドで使用するメソッドは一番下がわかりやすいかも
-## **kwargsの意味を調べる
-## テストコードを調べる
-
-# FIXME
-## pause_timer : タイマーが停止してしまう
-## resume_timer : タイマーを起動していると作動しない
-
-# HACK
-
-# XXX
-## pomodoro_timer : 不明
-
-# envファイル取得
-load_dotenv()
-
-# 最新のログが1番上に来るようにするカスタムハンドラ
-class ReverseFileHandler(logging.FileHandler):
-    def __init__(self, filename, mode='a', encoding=None, delay=False, max_lines=300):
-        super().__init__(filename, mode='a', encoding=encoding, delay=delay)
-        self.max_lines = max_lines
-        
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            lines = []
-            if os.path.exists(self.baseFilename):
-                with open(self.baseFilename, 'r', encoding=self.encoding) as f:
-                    lines = f.readlines()
-            
-            lines.insert(0, msg + '\n')
-            if len(lines) > self.max_lines:
-                lines = lines[:self.max_lines]
-                
-            with open(self.baseFilename, 'w', encoding=self.encoding) as f:
-                f.writelines(lines)
-        except Exception:
-            self.handleError(record)
-
-# ログの設定
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        ReverseFileHandler("timer_bot.log", encoding="utf-8", max_lines=300), # 逆順かつ最大300行に制限
-        logging.StreamHandler() # 今まで通りターミナル（画面）にも出す用
-    ]
-)
-
-# TEST環境の時は引数TEST_TOKENとTEST_CHANNEL_IDに変更
-# (HACK)リファクタリングした方がいい。とてもみにくい
-env_mode = os.getenv("ENV")
-env = "TARGET" if env_mode == "prod" else "TEST"
-
-DISCORD_TOKEN: str = os.getenv(f"{env}_TOKEN")
-TARGET_GUILD_ID = int(os.getenv(f"{env}_GUILD_ID"))
-
-# 初期設定
-ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
-
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(
-    status   = discord.Status.online,
-    intents  = intents,
-    activity = ACTIVITY
-)
-
-# ClientからBotに変更
-bot = commands.Bot(
-    command_prefix="!", # プレフィックス型コマンド用（helloコマンド等）
-    status=discord.Status.online,
-    intents=intents,
-    activity=ACTIVITY
-)
-
-command = app_commands.CommandTree(client)
-
-class Timer(commands.Cog):
+# クラス定義部分の置き換え
+new_class = '''class Timer(commands.Cog):
 
     TIMER_SET_MESSAGES = [
         "{mention} {minutes}分のタイマーをセットしたのだ！頑張るのだ！",
@@ -197,9 +102,6 @@ class Timer(commands.Cog):
         # {user_id: {is_active: bool, remaining_time: int, is_pomodoro: bool, minutes: int, channel: discord.abc.Messageable}}
         self.timer_tasks = {}
 
-    # TODO: グローバルから引っ張ってるから良くない
-    index = None if env_mode == "prod" else "_test"
-    
     # タイマーを登録する
     async def register_timer(
         self, 
@@ -384,7 +286,6 @@ class Timer(commands.Cog):
         self.kill_timer(user_id)
         return
 
-    
     # タイマーを一時停止する
     ## FIXME:停止になる
     @app_commands.command(name=f"pausetimer{index}", description="タイマーを一時停止します")
@@ -485,21 +386,18 @@ class Timer(commands.Cog):
             print("ループが停止したのだ")
             self.kill_timer(user_id)
 
-@bot.event
-# 起動時
-async def on_ready():
-    logging.info(f"Timer Bot Logged in as {bot.user}!") # 確認
-    logging.info("起動しました!")
+'''
 
-    await bot.add_cog(Timer(bot))
+# 正規表現で `class Timer:` から `index = None` の直前までをマッチして置換する
+pattern = r'class Timer:.*?(?=index = None if env_mode == "prod" else "_test")'
+new_content = re.sub(pattern, new_class, content, flags=re.DOTALL)
 
-    bot.tree.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
-    await bot.tree.sync(guild=discord.Object(id=TARGET_GUILD_ID))
+# 古いグローバルコマンド関数を削除する
+# @command.command(...) からファイルの最後までをマッチさせる
+# def timer_command から if __name__ == "__main__": の直前まで削除
+pattern2 = r'@command\.command\(name=f"timer\{index\}".*?(?=# ボットを起動)'
+new_content = re.sub(pattern2, "", new_content, flags=re.DOTALL)
 
-# ボットを起動
-if __name__ == "__main__":
-    if DISCORD_TOKEN:
-        bot.run(DISCORD_TOKEN)
-        
-    else:
-        logging.warning("DISCORD_TOKEN が .env ファイルに設定されていません。")
+with open("timer.py", "w") as f:
+    f.write(new_content)
+
