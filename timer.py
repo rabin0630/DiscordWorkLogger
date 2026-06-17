@@ -25,8 +25,6 @@ from discord.ext import commands
 ## テストコードを調べる
 
 # FIXME
-## pause_timer : タイマーが停止してしまう
-## resume_timer : タイマーを起動していると作動しない
 
 # HACK
 
@@ -162,6 +160,14 @@ class Timer(commands.Cog):
         "{mention} タイマーを一時停止したのだ！",
         "{mention} 途中で止めるのだ！",
         "{mention} またあとで再開するのだー！",
+    ]
+
+    TIMER_RESUME_MESSAGES = [
+        "{mention} タイマーを再開したのだ！また頑張るのだ！",
+        "{mention} カウントダウン再開なのだ！集中するのだー！",
+        "{mention} タイマーが再び動き出したのだ！残り時間をチェックするのだ！",
+        "{mention} 休憩終わりなのだ！タイマーを再開するのだ！",
+        "{mention} リスタートなのだ！あとちょっと頑張るのだ！",
     ]
 
     # コンストラクタ
@@ -433,20 +439,37 @@ class Timer(commands.Cog):
     @app_commands.command(name=f"resume_timer{index}", description="タイマーを再開します")
     async def timer_resume(self, interaction: discord.Interaction):
         logging.info("resumeコマンドを使用しました。")
+
         user_id = interaction.user.id
         user_timer = self.activated_timer_datas.get(user_id)
+
         if not user_timer:
             message = self.random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
             await interaction.response.send_message(message)
             return
 
-        user_timer["is_active"] = True
-        message = self.random_choice_format_list_message(self.TIMER_RESUME_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
-        task = asyncio.create_task(
-            self.countdown(user_id, self.TIMER_END_MESSAGES) 
-        )
-        self.timer_tasks[user_id] = task
-        await interaction.response.send_message(message)
+        # 
+        if user_timer["is_active"] == True:
+            await interaction.response.send_message("起動中だよ")
+            return
+
+        try:
+            logging.info(user_timer)
+            user_timer["is_active"] = True
+            logging.info(user_timer)
+            logging.info(f"{self.TIMER_RESUME_MESSAGES}")
+            message = self.random_choice_format_list_message(self.TIMER_RESUME_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
+            logging.info(message)
+            task = asyncio.create_task(
+                self.countdown(user_id, self.TIMER_END_MESSAGES) 
+            )
+            logging.info(task)
+            self.timer_tasks[user_id] = task
+            logging.info(self.timer_tasks)
+            await interaction.response.send_message(message)
+        except:
+            logging.warning("タイマー起動中はresumeコマンドが使用できないのだ")
+            await interaction.response.send_message("shit")
         return
 
     # (TODO)ポモドーロタイマーの実行
