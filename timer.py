@@ -1,4 +1,5 @@
 import logging
+from control_log import logging
 import time
 from datetime import datetime
 import os
@@ -36,38 +37,6 @@ from discord.ext import commands
 # XXX
 ## pomodoro_timer : 不明
 
-# 最新のログが1番上に来るようにするカスタムハンドラ
-class ReverseFileHandler(logging.FileHandler):
-    def __init__(self, filename, mode='a', encoding=None, delay=False, max_lines=300):
-        super().__init__(filename, mode='a', encoding=encoding, delay=delay)
-        self.max_lines = max_lines
-        
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            lines = []
-            if os.path.exists(self.baseFilename):
-                with open(self.baseFilename, 'r', encoding=self.encoding) as f:
-                    lines = f.readlines()
-            
-            lines.insert(0, msg + '\n')
-            if len(lines) > self.max_lines:
-                lines = lines[:self.max_lines]
-                
-            with open(self.baseFilename, 'w', encoding=self.encoding) as f:
-                f.writelines(lines)
-        except Exception:
-            self.handleError(record)
-
-# ログの設定
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        ReverseFileHandler("timer_bot.log", encoding="utf-8", max_lines=300), # 逆順かつ最大300行に制限
-        logging.StreamHandler() # 今まで通りターミナル（画面）にも出す用
-    ]
-)
 
 # TEST環境の時は引数TEST_TOKENとTEST_CHANNEL_IDに変更
 # (HACK)リファクタリングした方がいい。とてもみにくい
