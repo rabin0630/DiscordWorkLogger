@@ -1,107 +1,13 @@
-import logging
-import time
-from datetime import datetime
-import os
-import asyncio
-import random
-import datetime
-from dotenv import load_dotenv
+import re
 
-import logging
-import time
-from datetime import datetime
-from logging import info
+with open("timer.py", "r") as f:
+    content = f.read()
 
-import discord
-from discord import app_commands , Interaction
-from discord.ext import commands
+# 必要なモジュールの追加
+if "import time" not in content:
+    content = re.sub(r'import logging', "import logging\nimport time\nfrom datetime import datetime", content)
 
-# NOTE
-## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url
-## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
-## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
-## モノステート・パターンという設計パターンを使用しているらしい
-
-
-# TODO
-## classメソッドの入れ替え : 部品などを一番上にして、コマンドで使用するメソッドは一番下がわかりやすいかも
-## **kwargsの意味を調べる
-## テストコードを調べる
-
-# FIXME
-
-# HACK
-
-# XXX
-## pomodoro_timer : 不明
-
-# envファイル取得
-load_dotenv()
-
-# 最新のログが1番上に来るようにするカスタムハンドラ
-class ReverseFileHandler(logging.FileHandler):
-    def __init__(self, filename, mode='a', encoding=None, delay=False, max_lines=300):
-        super().__init__(filename, mode='a', encoding=encoding, delay=delay)
-        self.max_lines = max_lines
-        
-    def emit(self, record):
-        try:
-            msg = self.format(record)
-            lines = []
-            if os.path.exists(self.baseFilename):
-                with open(self.baseFilename, 'r', encoding=self.encoding) as f:
-                    lines = f.readlines()
-            
-            lines.insert(0, msg + '\n')
-            if len(lines) > self.max_lines:
-                lines = lines[:self.max_lines]
-                
-            with open(self.baseFilename, 'w', encoding=self.encoding) as f:
-                f.writelines(lines)
-        except Exception:
-            self.handleError(record)
-
-# ログの設定
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(levelname)s - %(message)s",
-    handlers=[
-        ReverseFileHandler("timer_bot.log", encoding="utf-8", max_lines=300), # 逆順かつ最大300行に制限
-        logging.StreamHandler() # 今まで通りターミナル（画面）にも出す用
-    ]
-)
-
-# TEST環境の時は引数TEST_TOKENとTEST_CHANNEL_IDに変更
-# (HACK)リファクタリングした方がいい。とてもみにくい
-env_mode = os.getenv("ENV")
-env = "TARGET" if env_mode == "prod" else "TEST"
-
-DISCORD_TOKEN: str = os.getenv(f"{env}_TOKEN")
-TARGET_GUILD_ID = int(os.getenv(f"{env}_GUILD_ID"))
-
-# 初期設定
-ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
-
-intents = discord.Intents.default()
-intents.message_content = True
-
-client = discord.Client(
-    status   = discord.Status.online,
-    intents  = intents,
-    activity = ACTIVITY
-)
-
-# ClientからBotに変更
-bot = commands.Bot(
-    command_prefix="!", # プレフィックス型コマンド用（helloコマンド等）
-    status=discord.Status.online,
-    intents=intents,
-    activity=ACTIVITY
-)
-
-command = app_commands.CommandTree(client)
-
-class Timer(commands.Cog):
+new_class = '''class Timer(commands.Cog):
 
     TIMER_SET_MESSAGES = [
         "{mention} {minutes}分のタイマーをセットしたのだ！頑張るのだ！",
@@ -176,32 +82,6 @@ class Timer(commands.Cog):
 
     # コンストラクタ
     def __init__(self, bot):
-        """
-        param:
-        minutes:int
-        minutesにセットする値
-
-        task:None
-        taskにセットする値
-
-        is_active:bool
-        is_activeにセットする値
-
-        is_pomodoro:bool
-        is_pomodoroにセットする値
-
-        user:discord.User
-        userにセットする値
-
-        remaining_time:int
-        remaining_timeにセットする値
-
-        interaction:discord.Interaction
-        interactionにセットする値
-
-        channel:discord.abc.Messageable
-        channelにセットする値
-        """
         self.bot = bot
         self.activated_timer_data = {}  # タイマーをメモリで管理する簡易的なデータベース
         self.timer_tasks = {}
@@ -215,43 +95,22 @@ class Timer(commands.Cog):
         user_id       : int, 
         is_active     : bool, 
         end_time      : float, 
-        remaining_time: float, # pauseコマンドを使用したときに格納する
+        remaining_time_at_pause: float,
         is_pomodoro   : bool,
         minutes       : int,
         channel       : discord.abc.Messageable
     ):
-        """
-        ユーザーIDをキーにして、タイマー情報を辞書に登録する
-
-        param:
-        user_id         : int
-            ユーザーID
-        is_active       : bool
-            タイマーが有効かどうか
-        remaining_time  : float
-            残り時間
-        is_pomodoro     : bool
-            ポモドーロタイマーかどうか
-        """
         self.activated_timer_data[user_id] = {
             "is_active"     : is_active,
             "is_pomodoro"   : is_pomodoro,
             "end_time"      : end_time,
-            "remaining_time": remaining_time,
+            "remaining_time_at_pause": remaining_time_at_pause,
             "minutes"       : minutes,
             "channel"       : channel
         }
 
     # メッセージ出力
     def random_choice_format_list_message(self, list_message: list[str], **kwargs):
-        """
-
-        リストからランダムでメッセージを選択し、discordに出力する
-
-        param:
-        list_message:list[str]
-            メッセージ
-        """
         if not list_message:
             return print("メッセージが渡されませんでした")
         message = random.choice(list_message)
@@ -259,10 +118,6 @@ class Timer(commands.Cog):
         return message
 
     def kill_timer(self, user_id: int):
-        """
-        エラーが起きた時や、ポーズ、停止など、正常終了以外の場合に呼ばれる
-        タイマーを強制終了する
-        """
         if not self.activated_timer_data.get(user_id):
             return print("タイマーが起動していません")
         self.activated_timer_data.pop(user_id, None)
@@ -273,11 +128,6 @@ class Timer(commands.Cog):
 
     # タイマーを開始する
     async def countdown(self, user_id: int, end_message: list = None):
-        """
-        タイマーを開始する
-        timer_taskで登録された残り時間を元にカウントダウンを実行
-        終了予定時刻（end_time）まで一気にスリープして待機する
-        """
         if not self.activated_timer_data.get(user_id):
             return print("タイマーが起動していません")
         
@@ -322,13 +172,6 @@ class Timer(commands.Cog):
     # メイン処理 (start_timer相当)
     @app_commands.command(name=f"timer{index}", description="指定された時間のタイマーをセットします")
     async def timer_command(self, interaction: discord.Interaction, minutes: int):
-        """
-        タイマーを起動するためのメイン処理
-        1. 既にタイマーが起動しているかチェック
-        2. timer_taskにタイマー情報を登録
-        3. discordにリアクションメッセージを送信
-        4. countdownをバックグラウンドで実行
-        """
         front_time = self.log_delay(interaction, "timer_command")
         if minutes < 0:
             return
@@ -346,9 +189,9 @@ class Timer(commands.Cog):
             # 2.timer_taskに情報を登録
             is_active = True
             end_time = front_time + (minutes * 60) # interaction.created_atを基準に計算
-            remaining_time = 0.0
+            remaining_time_at_pause = 0.0
             is_pomodoro = False
-            await self.register_timer(user_id, is_active, end_time, remaining_time, is_pomodoro, minutes, interaction.channel)
+            await self.register_timer(user_id, is_active, end_time, remaining_time_at_pause, is_pomodoro, minutes, interaction.channel)
             
             # 3. discordにリアクションメッセージを送信
             message = self.random_choice_format_list_message(self.TIMER_SET_MESSAGES, mention=interaction.user.mention, minutes=minutes)
@@ -396,7 +239,7 @@ class Timer(commands.Cog):
 
         user_timer["is_active"] = False
         # フロントでボタンが押された時間基準で、残り時間を保存する
-        user_timer["remaining_time"] = user_timer["end_time"] - front_time
+        user_timer["remaining_time_at_pause"] = user_timer["end_time"] - front_time
         
         task = self.timer_tasks.pop(user_id, None)
         if task:
@@ -409,10 +252,6 @@ class Timer(commands.Cog):
     # タイマーを表示する
     @app_commands.command(name=f"showtimer{index}", description="タイマーを表示します")
     async def timer_show(self, interaction: discord.Interaction):
-        """
-        タイマーを表示する
-        remaining_time(秒数)を分と秒に変換して表示
-        """
         self.log_delay(interaction, "timer_show")
         user_id = interaction.user.id
         user_timer = self.activated_timer_data.get(user_id)
@@ -426,7 +265,7 @@ class Timer(commands.Cog):
         if user_timer["is_active"]:
             remaining_time = user_timer["end_time"] - time.time()
         else:
-            remaining_time = user_timer["remaining_time"]
+            remaining_time = user_timer["remaining_time_at_pause"]
 
         if remaining_time < 0:
             remaining_time = 0
@@ -456,8 +295,8 @@ class Timer(commands.Cog):
         try:
             user_timer["is_active"] = True
             # 新しい終了時刻を計算
-            user_timer["end_time"] = front_time + user_timer["remaining_time"]
-            user_timer["remaining_time"] = 0.0
+            user_timer["end_time"] = front_time + user_timer["remaining_time_at_pause"]
+            user_timer["remaining_time_at_pause"] = 0.0
 
             message = self.random_choice_format_list_message(self.TIMER_RESUME_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
             
@@ -474,11 +313,6 @@ class Timer(commands.Cog):
     # ポモドーロタイマーの実行
     @app_commands.command(name=f"pomodorotimer{index}", description="ポモドーロタイマーをセットします")
     async def timer_pomodoro(self, interaction: discord.Interaction, sets: int = 4):
-        """
-        ポモドーロタイマーを実行する
-        作業時間 25分
-        休憩時間 5分
-        """
         front_time = self.log_delay(interaction, "timer_pomodoro")
         user_id = interaction.user.id
         user_timer = self.activated_timer_data.get(user_id)
@@ -514,21 +348,11 @@ class Timer(commands.Cog):
         except asyncio.CancelledError:
             print("ループが停止したのだ")
             self.kill_timer(user_id)
-@bot.event
-# 起動時
-async def on_ready():
-    logging.info(f"Timer Bot Logged in as {bot.user}!") # 確認
-    logging.info("起動しました!")
+'''
 
-    await bot.add_cog(Timer(bot))
+pattern = r'class Timer\(commands\.Cog\):.*?(?=@bot\.event)'
+new_content = re.sub(pattern, new_class, content, flags=re.DOTALL)
 
-    bot.tree.copy_global_to(guild=discord.Object(id=TARGET_GUILD_ID))
-    await bot.tree.sync(guild=discord.Object(id=TARGET_GUILD_ID))
+with open("timer.py", "w") as f:
+    f.write(new_content)
 
-# ボットを起動
-if __name__ == "__main__":
-    if DISCORD_TOKEN:
-        bot.run(DISCORD_TOKEN)
-        
-    else:
-        logging.warning("DISCORD_TOKEN が .env ファイルに設定されていません。")
