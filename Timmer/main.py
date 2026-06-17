@@ -1,11 +1,8 @@
-import asyncio
-import time
 import os
 import discord
-import aiohttp
-from control_log import logging
-from settings_env import DISCORD_TOKEN,TARGET_GUILD_ID,ACTIVITY,intents
-from datetime import datetime
+
+from settings_env import DISCORD_TOKEN,ACTIVITY,intents
+
 from dotenv import load_dotenv
 from timer import Timer
 

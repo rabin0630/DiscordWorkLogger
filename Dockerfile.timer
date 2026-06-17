@@ -18,6 +18,9 @@
 
 ### docker runの--env-fileで環境変数を渡せる
 
+# docker build --platform linux/amd64 -f Dockerfile.timer -t sottorabin/discord_timer .
+# docker push sottorabin/discord_timer:latest
+
 FROM python:3.13-slim
 
 WORKDIR /app
@@ -29,8 +32,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # timer.pyと、timer.pyからインポートされているschemas.pyをコンテナにコピー
-COPY timer.py .
-COPY schemas.py .
+COPY ./Timmer .
 
 # コンテナ起動時にtimer.pyを実行
-CMD ["python", "timer.py"]
+CMD ["python3", "main.py"]
