@@ -4,6 +4,7 @@ import asyncio
 import random
 import datetime
 from settings_env import env_mode
+from utils import random_choice_format_list_message
 
 import logging
 import time
@@ -155,21 +156,6 @@ class Timer(commands.Cog):
             "channel"       : channel
         }
 
-    # メッセージ出力
-    def random_choice_format_list_message(self, list_message: list[str], **kwargs):
-        """
-
-        リストからランダムでメッセージを選択し、discordに出力する
-
-        param:
-        list_message:list[str]
-            メッセージ
-        """
-        if not list_message:
-            return print("メッセージが渡されませんでした")
-        message = random.choice(list_message)
-        message = message.format(**kwargs)
-        return message
 
     def kill_timer(self, user_id: int):
         """
@@ -210,7 +196,7 @@ class Timer(commands.Cog):
 
             # スリープから目覚めた時、is_activeがTrueなら終了メッセージを送る
             if user_timer.get("is_active"):
-                message = self.random_choice_format_list_message(end_message, mention=mention, minutes=minutes)
+                message = random_choice_format_list_message(end_message, mention=mention, minutes=minutes)
                 await channel.send(message)
                 self.kill_timer(user_id)
                 
@@ -251,7 +237,7 @@ class Timer(commands.Cog):
         # 1.既にタイマーが起動しているかチェック
         user_timer = self.activated_timer_data.get(user_id)
         if user_timer:
-            message = self.random_choice_format_list_message(self.TIMER_ALREADY_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", minutes))
+            message = random_choice_format_list_message(self.TIMER_ALREADY_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", minutes))
             await interaction.response.send_message(message)
             return
 
@@ -264,7 +250,7 @@ class Timer(commands.Cog):
             await self.register_timer(user_id, is_active, end_time, remaining_time, is_pomodoro, minutes, interaction.channel)
             
             # 3. discordにリアクションメッセージを送信
-            message = self.random_choice_format_list_message(self.TIMER_SET_MESSAGES, mention=interaction.user.mention, minutes=minutes)
+            message = random_choice_format_list_message(self.TIMER_SET_MESSAGES, mention=interaction.user.mention, minutes=minutes)
             await interaction.response.send_message(message)
             
             # 4. countdownをバックグラウンドで実行
@@ -282,11 +268,11 @@ class Timer(commands.Cog):
         user_timer = self.activated_timer_data.get(user_id)
         
         if not user_timer:
-            message = self.random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
+            message = random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
             await interaction.response.send_message(message)
             return
 
-        message = self.random_choice_format_list_message(self.TIMER_STOP_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
+        message = random_choice_format_list_message(self.TIMER_STOP_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
         await interaction.response.send_message(message)
         self.kill_timer(user_id)
         return
@@ -299,7 +285,7 @@ class Timer(commands.Cog):
         user_timer = self.activated_timer_data.get(user_id)
         
         if not user_timer:
-            message = self.random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
+            message = random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
             await interaction.response.send_message(message)
             return
 
@@ -315,7 +301,7 @@ class Timer(commands.Cog):
         if task:
             task.cancel() # カウントダウンを一時停止
             
-        message = self.random_choice_format_list_message(self.TIMER_PAUSE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
+        message = random_choice_format_list_message(self.TIMER_PAUSE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
         await interaction.response.send_message(message)
         return
 
@@ -331,7 +317,7 @@ class Timer(commands.Cog):
         user_timer = self.activated_timer_data.get(user_id)
         
         if not user_timer:
-            message = self.random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
+            message = random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
             await interaction.response.send_message(message)
             return
 
@@ -347,7 +333,7 @@ class Timer(commands.Cog):
         minutes = int(remaining_time // 60)
         seconds = int(remaining_time % 60)
 
-        message = self.random_choice_format_list_message(self.TIMER_REMAINING_MESSAGES, mention=interaction.user.mention, minutes=minutes, seconds=seconds)
+        message = random_choice_format_list_message(self.TIMER_REMAINING_MESSAGES, mention=interaction.user.mention, minutes=minutes, seconds=seconds)
         await interaction.response.send_message(message)
 
     # タイマーを再開する
@@ -358,7 +344,7 @@ class Timer(commands.Cog):
         user_timer = self.activated_timer_data.get(user_id)
 
         if not user_timer:
-            message = self.random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
+            message = random_choice_format_list_message(self.TIMER_NOT_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=0)
             await interaction.response.send_message(message)
             return
 
@@ -372,7 +358,7 @@ class Timer(commands.Cog):
             user_timer["end_time"] = front_time + user_timer["remaining_time"]
             user_timer["remaining_time"] = 0.0
 
-            message = self.random_choice_format_list_message(self.TIMER_RESUME_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
+            message = random_choice_format_list_message(self.TIMER_RESUME_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
             
             task = asyncio.create_task(
                 self.countdown(user_id, self.TIMER_END_MESSAGES) 
@@ -397,7 +383,7 @@ class Timer(commands.Cog):
         user_timer = self.activated_timer_data.get(user_id)
 
         if user_timer:
-            message = self.random_choice_format_list_message(self.TIMER_ALREADY_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
+            message = random_choice_format_list_message(self.TIMER_ALREADY_ACTIVE_MESSAGES, mention=interaction.user.mention, minutes=user_timer.get("minutes", 0))
             await interaction.response.send_message(message)
             return
 
@@ -409,7 +395,7 @@ class Timer(commands.Cog):
                 user_id, is_active, end_time, 0.0, is_pomodoro, 25, interaction.channel
             )
 
-            message = self.random_choice_format_list_message(self.TIMER_SET_MESSAGES, mention=interaction.user.mention, minutes=25)
+            message = random_choice_format_list_message(self.TIMER_SET_MESSAGES, mention=interaction.user.mention, minutes=25)
             await interaction.response.send_message(message)
 
             for _ in range(sets):
