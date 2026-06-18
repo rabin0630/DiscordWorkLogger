@@ -27,6 +27,9 @@ WORKDIR /app
 ENV PYTHONUNBUFFERED=1
 ENV TZ=Asia/Tokyo
 
+# ffmpegをインストール
+RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
+
 # requirements.txtをコピーしてパッケージをインストール
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
