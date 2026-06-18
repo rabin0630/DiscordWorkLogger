@@ -1,3 +1,4 @@
+import schemas
 from fastapi import FastAPI, Depends, Header
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
@@ -32,16 +33,16 @@ def get_db():
 ## post
 
 ### 1. 出勤打刻
-@app.post('/clock_in')
+@app.post('/create_clock_in')
 async def create_attendance_record(attendance_record: schemas.AttendanceRecord, db: Session = Depends(get_db)):
   return crud.stamp_clock_in(db, attendance_record)
 
 ### 2. 退勤打刻
-@app.post('/clock_out')
+@app.post('/update_clock_out')
 async def update_attendance_record(attendance_record: schemas.AttendanceRecord, db: Session = Depends(get_db)):
   return crud.stamp_clock_out(db, attendance_record)
 
-### 3. タイマースタート
-@app.post('/timer_start')
-async def timer_start(timer_info: schemas.TimerInfo, db: Session = Depends(get_db)):
-  return crud.start_timer(db, timer_info)
+### ユーザー名登録
+@app.post('/register_member')
+async def register_member(member: schemas.Member, db: Session = Depends(get_db)):
+  return crud.register_member(db,member)

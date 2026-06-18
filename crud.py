@@ -22,6 +22,18 @@ from sqlalchemy.orm import Session
 """
 
 ## Create (出勤時)
+def register_member(db: Session,member: schemas.Member)
+    data_base = models.Member(
+        user_id = member.user_id,
+        user_name = member.user_name,
+        created_date = member.created_date,
+    )
+
+    db.add(data_base)
+    db.commit()
+    db.refresh(data_base)
+    return data_base
+
 def stamp_clock_in(db: Session, attendance_record: schemas.AttendanceRecord):
   data_base = models.AttendanceRecords(
     member_id = attendance_record.member_id,
