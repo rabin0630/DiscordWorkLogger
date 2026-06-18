@@ -12,6 +12,11 @@ param:<各カラムの説明。それぞれのカラムについて説明する>
 <カラム>:<カラムの型>
 <カラムの簡単な説明>
 """
+class Member(BaseModel):
+    user_id         : int
+    user_name       : str
+    created_date    : datetime.date
+    retirement_date : datetime.date
 
 class AttendanceRecord(BaseModel):
     """ 
@@ -66,25 +71,3 @@ class MonthlySummary(BaseModel):
     class Config:
       orm_mode = True
 
-class TimerInfo(BaseModel):
-    """
-    タイマー情報のテーブル
-    各メンバーのタイマー情報を保持する
-
-    param:
-    member_id      : int
-        メンバーID。外部キーでMemberテーブルを参照
-    is_active       : bool
-        タイマーが有効かどうか。Trueの場合は有効、Falseの場合は無効
-    end_time        : Optional[datetime.datetime]
-        終了時間。2026-06-05 18:00。
-    remaining_time  : Optional[int]
-        残り秒数。一時停止をした時などに使用。Noneの場合はNULL
-    """
-    member_id     : int
-    is_active     : bool
-    end_time      : Optional[datetime.datetime]
-    remaining_time: Optional[int]
-
-    class Config:
-      orm_mode = True
