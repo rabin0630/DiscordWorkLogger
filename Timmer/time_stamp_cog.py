@@ -15,7 +15,7 @@ import discord
 from discord import app_commands,Interaction
 from discord.ext import commands
 
-index = None if env_mode == "prod" else "_test"
+index = "" if env_mode == "prod" else "_test"
 
 class Time_Stamp(commands.Cog):
   def __init__(self, bot):

@@ -121,7 +121,7 @@ class Timer(commands.Cog):
         self.timer_tasks = {}
 
     # TODO: グローバルから引っ張ってるから良くない
-    index = None if env_mode == "prod" else "_test"
+    index = "" if env_mode == "prod" else "_test"
     
     # タイマーを登録する
     async def register_timer(
