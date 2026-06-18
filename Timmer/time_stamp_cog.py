@@ -23,6 +23,7 @@ class Time_Stamp(commands.Cog):
 
   @app_commands.command(name=f"in{index}",description="出勤します")
   async def work_in(self,interaction:Interaction):
-    user_id = interaction.user.mention
-    
-    await interaction.response.send_message(f"{user_id} 出勤を記録したのだ！")
+    user = interaction.user.mention
+    user_id = interaction.user.id
+    user_type = type(user_id)
+    await interaction.response.send_message(f"{user} :{user_id}:{user_type}出勤を記録したのだ！")

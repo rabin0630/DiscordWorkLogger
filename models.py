@@ -1,10 +1,20 @@
-from sqlalchemy import Column, String, Integer, BigInteger, DateTime
+from sqlalchemy import false
+from sqlalchemy import Column, String, Integer, BigInteger, DateTime, Date
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 
 Base = declarative_base()
 
 # データベースのテーブル設計
+
+class Member(Base):
+
+    __tablename__ = "Member_table"
+
+    user_id = Column(BigInteger,primary_key=True)
+    user_name = Column(String(10),nullable=False)
+    created_date = Column(Date,nullable=False)
+    retirement_date = Column(Date,nullable=True)
 
 class AttendanceRecords(Base):
     """
@@ -31,7 +41,7 @@ class AttendanceRecords(Base):
 
     index         = Column(Integer, primary_key=True, autoincrement=True, unique=True)
     member_id     = Column(BigInteger)
-    date          = Column(DateTime)
+    date          = Column(Date)
     start_time    = Column(DateTime)
     end_time      = Column(DateTime, nullable=True)
 
@@ -64,30 +74,3 @@ class MonthlySummary(Base):
     year_month      = Column(String(6))
     total_work_time = Column(DateTime, nullable=True)
     work_sessions   = Column(Integer, nullable=True)
-
-class TimerInfo(Base):
-    """
-    タイマー情報を管理するテーブル。
-    1行1レコードで、各メンバーのタイマー情報を保持する
-
-    param:
-    member_id       : int
-        メンバーID。外部キーでMemberテーブルを参照
-        
-    is_active       : bool
-        タイマーが有効かどうか。Trueの場合は有効、Falseの場合は無効
-    end_time        : Optional[datetime.datetime]
-        終了時間。2026-06-05 18:00。
-    remaining_time  : Optional[int]
-        残り秒数。一時停止をした時などに使用。Noneの場合はNULL
-    """
-
-    __tablename__   = "timer_info"
-
-    member_id       = Column(BigInteger, primary_key=True, unique=True)
-    is_active       = Column(Boolean, default=False)
-    end_time        = Column(DateTime)
-    remaining_time  = Column(Integer, nullable=True)
-    
-
-

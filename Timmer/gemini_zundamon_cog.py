@@ -25,7 +25,7 @@ class Gemini_Zundamon(commands.Cog):
         
         # 環境変数にパスワードが設定されていない場合
         if not correct_password:
-            await interaction.response.send_message("環境変数（.env）に `ZUNDAMON_PASSWORD` が設定されていないのだ！", ephemeral=True)
+            await interaction.response.send_message(f"{correct_password}環境変数（.env）に `ZUNDAMON_PASSWORD` が設定されていないのだ！", ephemeral=True)
             return
 
         # パスワードチェック
