@@ -2,7 +2,7 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: my-mysql-container
+    container_name: mysql
     restart: always
     env_file:
       - .env
@@ -11,8 +11,25 @@ services:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
-      - ./init.sql:/docker-entrypoint-initdb.d/init.sql # 初期化SQL
     command: --default-authentication-plugin=mysql_native_password
+
+  api:
+    image: python:3.11
+    container_name: fastapi
+    restart: always
+    env_file:
+      - .env
+    environment:
+      # Dockerのネットワーク経由でMySQLに繋ぐためにホスト名を上書き
+      - MYSQL_HOST=mysql
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    working_dir: /app
+    command: bash -c "pip install -r requirements.txt && uvicorn from_discord:app --host 0.0.0.0 --port 8000 --reload"
+    depends_on:
+      - mysql
 
 volumes:
   mysql_data:

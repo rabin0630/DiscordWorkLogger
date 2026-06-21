@@ -22,7 +22,7 @@ from sqlalchemy.orm import Session
 """
 
 ## Create (出勤時)
-def register_member(db: Session,member: schemas.Member)
+def register_member(db: Session,member: schemas.Member):
     data_base = models.Member(
         user_id = member.user_id,
         user_name = member.user_name,
