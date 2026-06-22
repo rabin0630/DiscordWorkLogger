@@ -16,7 +16,7 @@ class Member(BaseModel):
     user_id         : int
     user_name       : str
     created_date    : datetime.date
-    retirement_date : datetime.date
+    retirement_date : Optional[datetime.date] = None
 
 class AttendanceRecord(BaseModel):
     """ 

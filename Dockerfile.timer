@@ -35,7 +35,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # timer.pyと、timer.pyからインポートされているschemas.pyをコンテナにコピー
-COPY ./Timmer .
+COPY ./timer .
 
 # コンテナ起動時にtimer.pyを実行
 CMD ["python3", "main.py"]

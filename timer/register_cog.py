@@ -2,11 +2,14 @@ import time
 import datetime
 from datetime import date
 import asyncio
-from settings_env import env_mode
+from settings_env import env_mode,API_URL
+
 
 import discord
 from discord import app_commands
 from discord.ext import commands
+
+import requests
 
 # TODO
 ## post文を書く
@@ -27,7 +30,15 @@ class Register(commands.Cog):
     now = date.today()
     user_id = interaction.user.id
 
-    await interaction.response.send_message(f"{now}:{user_id}:{name}")
+    data = {
+        "user_id": user_id,
+        "user_name": name,
+        "created_date": str(now),
+        "retirement_date": None
+    }
+    requests.post(f"{API_URL}/register_member", json=data)
+
+    await interaction.response.send_message(f"{now}:{user_id}:{name}を登録したのだ！")
     
 
     

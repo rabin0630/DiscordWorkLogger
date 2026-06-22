@@ -12,6 +12,8 @@ env = "TARGET" if env_mode == "prod" else "TEST"
 DISCORD_TOKEN: str = os.getenv(f"{env}_TOKEN")
 TARGET_GUILD_ID = os.getenv(f"{env}_GUILD_ID")
 
+API_URL:str = os.getenv("API_BASE_URL")
+
 # 初期設定
 ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
 
