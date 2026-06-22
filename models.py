@@ -12,7 +12,7 @@ class Member(Base):
     __tablename__ = "Member_table"
 
     user_id = Column(BigInteger,primary_key=True)
-    user_name = Column(String(10),nullable=False)
+    user_name = Column(String(10),nullable=False, unique=True)
     created_date = Column(Date,nullable=False)
     retirement_date = Column(Date,nullable=True)
 

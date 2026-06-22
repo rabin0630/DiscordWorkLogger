@@ -23,27 +23,35 @@ from sqlalchemy.orm import Session
 
 ## Create (出勤時)
 def register_member(db: Session,member: schemas.Member):
-        data_base = models.Member(
-            user_id = member.user_id,
-            user_name = member.user_name,
-            created_date = member.created_date,
-        )
+    # ① まずIDが被ってないかチェック
+    if db.query(models.Member).filter(models.Member.user_id == member.user_id).first():
+        return "id_error"
+    
+    # ② 次に名前が被ってないかチェック
+    if db.query(models.Member).filter(models.Member.user_name == member.user_name).first():
+        return "name_error"
 
-        db.add(data_base)
-        db.commit()
-        db.refresh(data_base)
-        return data_base
+    # ③ どっちも問題なければここで初めて登録（db.add）する
+    data_base = models.Member(
+        user_id = member.user_id,
+        user_name = member.user_name,
+        created_date = member.created_date,
+    )
+    db.add(data_base)
+    db.commit()
+    db.refresh(data_base)
+    return data_base
 
 def stamp_clock_in(db: Session, attendance_record: schemas.AttendanceRecord):
-  data_base = models.AttendanceRecords(
-    member_id = attendance_record.member_id,
-    date = attendance_record.date,
-    start_time = attendance_record.start_time
-  )
-  db.add(data_base)
-  db.commit()
-  db.refresh(data_base)
-  return data_base
+    data_base = models.AttendanceRecords(
+        member_id = attendance_record.member_id,
+        date = attendance_record.date,
+        start_time = attendance_record.start_time
+    )
+    db.add(data_base)
+    db.commit()
+    db.refresh(data_base)
+    return data_base
 
 ## Update (退勤時)
 def stamp_clock_out(db: Session, attendance_record: schemas.AttendanceRecord):

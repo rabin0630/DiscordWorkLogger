@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import models, schemas, crud
 from database import SessionLocal, engine
+from fastapi import HTTPException
 
 # データベースの初期設定的なやつ
 models.Base.metadata.create_all(bind=engine)
@@ -43,6 +44,14 @@ async def update_attendance_record(attendance_record: schemas.AttendanceRecord, 
   return crud.stamp_clock_out(db, attendance_record)
 
 ### ユーザー名登録
+
 @app.post('/register_member')
 async def register_member(member: schemas.Member, db: Session = Depends(get_db)):
-  return crud.register_member(db,member)
+  result = crud.register_member(db,member)
+  
+  if result == "id_error":
+      raise HTTPException(status_code=409, detail="このIDはすでに使われています")
+  elif result == "name_error":
+      raise HTTPException(status_code=409, detail="この名前はすでに使われています")
+      
+  return result
