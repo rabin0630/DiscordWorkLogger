@@ -45,18 +45,6 @@ def stamp_clock_in(db: Session, attendance_record: schemas.AttendanceRecord):
   db.refresh(data_base)
   return data_base
 
-def start_timer(db: Session, timer_info: schemas.TimerInfo):
-    data_base = models.TimerInfo(
-        member_id = timer_info.member_id,
-        is_active = timer_info.is_active,
-        end_time = timer_info.end_time,
-        remaining_time = timer_info.remaining_time
-    )
-    db.add(data_base)
-    db.commit()
-    db.refresh(data_base)
-    return data_base
-
 ## Update (退勤時)
 def stamp_clock_out(db: Session, attendance_record: schemas.AttendanceRecord):
     # 今日の出勤記録を探す

@@ -7,8 +7,6 @@ from settings_env import env_mode
 from utils import random_choice_format_list_message
 
 import logging
-import time
-from datetime import datetime
 
 import discord
 from discord import app_commands

@@ -8,7 +8,7 @@ from timer import Timer
 from time_stamp_cog import Time_Stamp
 from voicevox_cog import Voicevox
 from gemini_zundamon_cog import Gemini_Zundamon
-
+from register_cog import Register
 from discord.ext import commands
 # NOTE
 ## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url
@@ -65,6 +65,7 @@ async def on_ready():
     await bot.add_cog(Time_Stamp(bot))
     await bot.add_cog(Voicevox(bot))
     await bot.add_cog(Gemini_Zundamon(bot))
+    await bot.add_cog(Register(bot))
 
     # グローバルコマンドを特定のサーバーにコピーして即時反映させるのだ！
     target_guild = discord.Object(id=TARGET_GUILD_ID)
