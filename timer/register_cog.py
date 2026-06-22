@@ -36,9 +36,9 @@ class Register(commands.Cog):
         "created_date": str(now),
         "retirement_date": None
     }
-    requests.post(f"{API_URL}/register_member", json=data)
+    response = requests.post(f"{API_URL}/register_member", json=data)
 
-    await interaction.response.send_message(f"{now}:{user_id}:{name}を登録したのだ！")
+    await interaction.response.send_message(response.status_code)
     
 
     
