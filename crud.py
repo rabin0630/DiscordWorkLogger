@@ -40,6 +40,7 @@ def register_member(db: Session,member: schemas.Member):
     db.add(data_base)
     db.commit()
     db.refresh(data_base)
+    print(data_base)
     return data_base
 
 def stamp_clock_in(db: Session, attendance_record: schemas.AttendanceRecord):

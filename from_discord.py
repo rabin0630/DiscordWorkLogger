@@ -48,6 +48,7 @@ async def update_attendance_record(attendance_record: schemas.AttendanceRecord, 
 @app.post('/register_member')
 async def register_member(member: schemas.Member, db: Session = Depends(get_db)):
   result = crud.register_member(db,member)
+  print(result)
   
   if result == "id_error":
       raise HTTPException(status_code=409, detail="このIDはすでに使われています")
