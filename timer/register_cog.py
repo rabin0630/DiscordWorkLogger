@@ -41,14 +41,18 @@ class Register(commands.Cog):
     response = requests.post(f"{API_URL}/register_member", json=data)
 
     await interaction.response.send_message(response.status_code)
-
+  
+  # 名前を返す
   @app_commands.command(name=f"myname{index}", description="名前を確認します")
   async def myname(self,interaction:discord.Interaction):
       data = {"user_id":interaction.user.id}
 
-      response = request.post(f"{API_URL}/my_name", json=data)
+      response = requests.post(f"{API_URL}/get_name", json=data)
 
-    await interaction.response.send_message(response)
-    
+      if response.status_code == 409:
+          await interaction.response.send_message("まだ名前が登録されていないのだ！先に名前を登録するのだ！")
+      elif response.status_code == 200:
+          user_name = response.json()["user_name"]
+          await interaction.response.send_message(f"お前の名前は「{user_name}」なのだ！")
 
     

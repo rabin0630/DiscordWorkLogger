@@ -18,6 +18,9 @@ class Member(BaseModel):
     created_date    : datetime.date
     retirement_date : Optional[datetime.date] = None
 
+class MemberIdOnly(BaseModel):
+    user_id         : int
+
 class AttendanceRecord(BaseModel):
     """ 
     出退勤を管理するテーブル

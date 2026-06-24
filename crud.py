@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import update
 from sqlalchemy.orm import Session
 
+from models import Member
 # データベースの操作をする
 
 
@@ -69,3 +70,17 @@ def stamp_clock_out(db: Session, attendance_record: schemas.AttendanceRecord):
         db.refresh(data_base)
         return data_base
     return None
+
+
+## get
+def get_name_by_userid(db: Session, member: schemas.MemberIdOnly):
+
+    # 送信されたuser_idを用いてnameを取得する
+    data_base = db.query(Member).filter(
+        Member.user_id == member.user_id
+    ).first()
+
+    if data_base is None:
+        return "no_name"
+
+    return data_base
