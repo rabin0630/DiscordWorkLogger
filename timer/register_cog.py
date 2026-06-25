@@ -18,90 +18,90 @@ import requests
 ## api側でガード句（登録されたuser.id or nameがあるか）を書く
 
 class Register(commands.Cog):
-  # TODO: グローバルから引っ張ってるから良くない
-  index = "" if env_mode == "prod" else "_test"
-  
-  REGISTER_COMPLETE_MESSAGES = [
-      "{name}の登録が完了したのだ！これからよろしくなのだ！",
-      "ばっちり登録完了なのだ！{name}、一緒に頑張るのだ！",
-      "登録できたのだ！{name}の働きぶり、楽しみにしてるのだ！",
-      "{name}のデータをしっかり記録したのだ！任せるのだ！",
-      "登録完了なのだ！{name}も今日からずんだもんの仲間なのだ！",
-      "ようこそなのだ！{name}の登録を無事に受け付けたのだ！",
-      "登録成功なのだ！{name}、気合入れていくのだー！",
-      "{name}の登録がバッチリ終わったのだ！いつでも出勤するのだ！",
-      "登録完了なのだ！{name}の活躍をボクが記録してあげるのだ！",
-      "ピピピピ！{name}の登録が完了なのだ！よろしく頼むのだ！"
-  ]
-  
-  REGISTER_ID_CONFLICT_MESSAGES = [
-      "お前のIDはすでに登録されているのだ！名前を変えたいなら更新機能を使うのだ！",
-      "ん？お前はもう登録済みのはずなのだ！二重登録はできないのだ！",
-      "すでにボクの仲間として登録されているのだ！出勤を待ってるのだ！",
-      "おっと！このIDはすでに使われているのだ！更新機能でやり直すのだ！",
-      "登録しようとしたけど、もうお前のデータはバッチリあるのだ！"
-  ]
-  
-  REGISTER_NAME_CONFLICT_MESSAGES = [
-      "「{name}」という名前は他の人がすでに使っているのだ…別の名前にしてほしいのだ！",
-      "残念だけど「{name}」は先約がいるのだ！少し変えてみてほしいのだ！",
-      "「{name}」はもう使われているのだ！別の名前でリトライするのだ！",
-      "ごめんなのだ！「{name}」は他の仲間が使っているみたいなのだ！",
-      "「{name}」はすでに登録されている名前なのだ…！他のカッコいい名前を考えるのだ！"
-  ]
+    # TODO: グローバルから引っ張ってるから良くない
+    index = "" if env_mode == "prod" else "_test"
+    
+    REGISTER_COMPLETE_MESSAGES: list[str] = [
+        "{name}の登録が完了したのだ！これからよろしくなのだ！",
+        "ばっちり登録完了なのだ！{name}、一緒に頑張るのだ！",
+        "登録できたのだ！{name}の働きぶり、楽しみにしてるのだ！",
+        "{name}のデータをしっかり記録したのだ！任せるのだ！",
+        "登録完了なのだ！{name}も今日からずんだもんの仲間なのだ！",
+        "ようこそなのだ！{name}の登録を無事に受け付けたのだ！",
+        "登録成功なのだ！{name}、気合入れていくのだー！",
+        "{name}の登録がバッチリ終わったのだ！いつでも出勤するのだ！",
+        "登録完了なのだ！{name}の活躍をボクが記録してあげるのだ！",
+        "ピピピピ！{name}の登録が完了なのだ！よろしく頼むのだ！"
+    ]
+    
+    REGISTER_ID_CONFLICT_MESSAGES: list[str] = [
+        "お前のIDはすでに登録されているのだ！名前を変えたいなら更新機能を使うのだ！",
+        "ん？お前はもう登録済みのはずなのだ！二重登録はできないのだ！",
+        "すでにボクの仲間として登録されているのだ！出勤を待ってるのだ！",
+        "おっと！このIDはすでに使われているのだ！更新機能でやり直すのだ！",
+        "登録しようとしたけど、もうお前のデータはバッチリあるのだ！"
+    ]
+    
+    REGISTER_NAME_CONFLICT_MESSAGES: list[str] = [
+        "「{name}」という名前は他の人がすでに使っているのだ…別の名前にしてほしいのだ！",
+        "残念だけど「{name}」は先約がいるのだ！少し変えてみてほしいのだ！",
+        "「{name}」はもう使われているのだ！別の名前でリトライするのだ！",
+        "ごめんなのだ！「{name}」は他の仲間が使っているみたいなのだ！",
+        "「{name}」はすでに登録されている名前なのだ…！他のカッコいい名前を考えるのだ！"
+    ]
 
-  def __init__(self, bot):
-    self.bot = bot
-  
-  # 名前を登録する
-  @app_commands.command(name=f"register{index}", description="名前を登録します")
-  async def register_command(self, interaction: discord.Interaction, name: str):
-    if not name:
-      return interaction.response.send_message("名前を書くのだ")
+    def __init__(self, bot):
+        self.bot = bot
     
-    now = date.today()
-    user_id = interaction.user.id
-    
-    data = {
-        "user_id": user_id,
-        "user_name": name,
-        "created_date": str(now),
-        "retirement_date": None
-    }
-    
-    response = requests.post(f"{API_URL}/register_member", json=data)
+    # 名前を登録する
+    @app_commands.command(name=f"register{index}", description="名前を登録します")
+    async def register_command(self, interaction: discord.Interaction, name: str):
+        if not name:
+            return interaction.response.send_message("名前を書くのだ")
+        
+        now: datetime.date = date.today()
+        user_id: int = interaction.user.id
+        
+        data: dict = {
+            "user_id": user_id,
+            "user_name": name,
+            "created_date": str(now),
+            "retirement_date": None
+        }
+        
+        response: requests.Response = requests.post(f"{API_URL}/register_member", json=data)
 
-    if response.status_code == 200:
-        msg = random_choice_format_list_message(self.REGISTER_COMPLETE_MESSAGES, name=name)
-        await interaction.response.send_message(msg)
-        
-    elif response.status_code == 409:
-        # FastAPIから返ってきたエラーの詳細(detail)を取得するのだ
-        error_detail = response.json().get("detail", "")
-        
-        if error_detail == "このIDはすでに使われています":
-            msg = random_choice_format_list_message(self.REGISTER_ID_CONFLICT_MESSAGES, name=name)
+        if response.status_code == 200:
+            msg: str = random_choice_format_list_message(self.REGISTER_COMPLETE_MESSAGES, name=name)
             await interaction.response.send_message(msg)
-        elif error_detail == "この名前はすでに使われています":
-            msg = random_choice_format_list_message(self.REGISTER_NAME_CONFLICT_MESSAGES, name=name)
-            await interaction.response.send_message(msg)
+            
+        elif response.status_code == 409:
+            # FastAPIから返ってきたエラーの詳細(detail)を取得するのだ
+            error_detail = response.json().get("detail", "")
+            
+            if error_detail == "このIDはすでに使われています":
+                msg: str = random_choice_format_list_message(self.REGISTER_ID_CONFLICT_MESSAGES, name=name)
+                await interaction.response.send_message(msg)
+            elif error_detail == "この名前はすでに使われています":
+                msg: str = random_choice_format_list_message(self.REGISTER_NAME_CONFLICT_MESSAGES, name=name)
+                await interaction.response.send_message(msg)
+            else:
+                await interaction.response.send_message("すでに登録されているみたいなのだ！")
         else:
-            await interaction.response.send_message("すでに登録されているみたいなのだ！")
-    else:
-        await interaction.response.send_message(f"登録に失敗したのだ… (ステータスコード: {response.status_code})")
-  
-  # 名前を返す
-  @app_commands.command(name=f"myname{index}", description="名前を確認します")
-  async def myname(self,interaction:discord.Interaction):
-      data = {"user_id":interaction.user.id}
+            await interaction.response.send_message(f"登録に失敗したのだ… (ステータスコード: {response.status_code})")
+    
+    # 名前を返す
+    @app_commands.command(name=f"myname{index}", description="名前を確認します")
+    async def myname(self,interaction:discord.Interaction):
+        data: dict = {"user_id":interaction.user.id}
 
-      response = requests.post(f"{API_URL}/get_name", json=data)
+        response: requests.Response = requests.post(f"{API_URL}/get_name", json=data)
 
-      if response.status_code == 409:
-          await interaction.response.send_message("まだ名前が登録されていないのだ！先に名前を登録するのだ！")
-      elif response.status_code == 200:
-          user_name = response.json()["user_name"]
-          await interaction.response.send_message(f"お前の名前は「{user_name}」なのだ！")
-          print(dir(response))
+        if response.status_code == 409:
+            await interaction.response.send_message("まだ名前が登録されていないのだ！先に名前を登録するのだ！")
+        elif response.status_code == 200:
+            user_name = response.json()["user_name"]
+            await interaction.response.send_message(f"お前の名前は「{user_name}」なのだ！")
+            print(dir(response))
 
     
