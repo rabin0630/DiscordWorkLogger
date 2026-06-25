@@ -5,7 +5,7 @@ import datetime
 from datetime import date
 import asyncio
 from settings_env import env_mode,API_URL
-from utils import random_choice_format_message
+from utils import random_choice_format_list_message
 
 
 import discord
@@ -72,7 +72,7 @@ class Register(commands.Cog):
     response = requests.post(f"{API_URL}/register_member", json=data)
 
     if response.status_code == 200:
-        msg = random_choice_format_message(self.REGISTER_COMPLETE_MESSAGES, name=name)
+        msg = random_choice_format_list_message(self.REGISTER_COMPLETE_MESSAGES, name=name)
         await interaction.response.send_message(msg)
         
     elif response.status_code == 409:
@@ -80,10 +80,10 @@ class Register(commands.Cog):
         error_detail = response.json().get("detail", "")
         
         if error_detail == "このIDはすでに使われています":
-            msg = random_choice_format_message(self.REGISTER_ID_CONFLICT_MESSAGES, name=name)
+            msg = random_choice_format_list_message(self.REGISTER_ID_CONFLICT_MESSAGES, name=name)
             await interaction.response.send_message(msg)
         elif error_detail == "この名前はすでに使われています":
-            msg = random_choice_format_message(self.REGISTER_NAME_CONFLICT_MESSAGES, name=name)
+            msg = random_choice_format_list_message(self.REGISTER_NAME_CONFLICT_MESSAGES, name=name)
             await interaction.response.send_message(msg)
         else:
             await interaction.response.send_message("すでに登録されているみたいなのだ！")
