@@ -53,6 +53,22 @@ class Register(commands.Cog):
         "ごめんなのだ！「{name}」は他の仲間が使っているみたいなのだ！",
         "「{name}」はすでに登録されている名前なのだ…！他のカッコいい名前を考えるのだ！"
     ]
+    
+    NO_DATA_AND_REGISTER_NAME_MESSAGES: list[str] = [
+        "まだ名前が登録されていないのだ！先に名前を登録するのだ！",
+        "おっと！お前のデータがまだないのだ。まずは登録からよろしくなのだ！",
+        "だめなのだ！名前が登録されてないから確認できないのだ。先に登録コマンドを使うのだ！",
+        "ボクの記録にお前の名前がないのだ！急いで登録するのだー！",
+        "名無しの権兵衛はいやなのだ！先に名前の登録をお願いするのだ！"
+    ]
+    
+    YOUR_NAME_MESSAGES: list[str] = [
+        "お前の名前は「{name}」なのだ！",
+        "ボクの記録によると、お前は「{name}」なのだ！間違いないのだ！",
+        "お前の名前はズバリ！「{name}」なのだ！カッコいい名前なのだ！",
+        "確認したのだ！お前は「{name}」としてバッチリ登録されているのだ！",
+        "「{name}」！それがお前の名前なのだ！今日も一日頑張るのだ！"
+    ]
 
     def __init__(self, bot):
         self.bot = bot
@@ -76,6 +92,7 @@ class Register(commands.Cog):
 
         response: requests.Response = requests.post(f"{API_URL}/register_member", data=member_data_json)
 
+
         if response.status_code == 200:
             msg: str = random_choice_format_list_message(self.REGISTER_COMPLETE_MESSAGES, name=name)
             await interaction.response.send_message(msg)
@@ -98,15 +115,30 @@ class Register(commands.Cog):
     # 名前を返す
     @app_commands.command(name=f"myname{index}", description="名前を確認します")
     async def myname(self,interaction:discord.Interaction):
-        data: dict = {"user_id":interaction.user.id}
+        """
+        コマンドしたユーザーのuser_idを用いて、登録したuser_nameをdiscordに返す関数
+        
+        @param interaction: interactionの中にあるuser.id
+        @return: discordに登録されたuser_name
+        """
+        user_id = interaction.user.id
+        
+        user_data: schemas.MemberIdOnly = schemas.MemberIdOnly(
+            user_id = user_id
+        )
 
-        response: requests.Response = requests.post(f"{API_URL}/get_name", json=data)
+        user_data_json: str = user_data.json()
+
+        response: requests.Response = requests.post(f"{API_URL}/get_name", data=user_data_json)
 
         if response.status_code == 409:
-            await interaction.response.send_message("まだ名前が登録されていないのだ！先に名前を登録するのだ！")
+            msg: str = random_choice_format_list_message(self.NO_DATA_AND_REGISTER_NAME_MESSAGES)
+            await interaction.response.send_message(msg)
+            
         elif response.status_code == 200:
             user_name = response.json()["user_name"]
-            await interaction.response.send_message(f"お前の名前は「{user_name}」なのだ！")
+            msg: str = random_choice_format_list_message(self.YOUR_NAME_MESSAGES, name=user_name)
+            await interaction.response.send_message(msg)
             print(dir(response))
 
     
