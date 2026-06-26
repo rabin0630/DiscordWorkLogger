@@ -6,6 +6,10 @@ from datetime import date
 import asyncio
 from settings_env import env_mode,API_URL
 from utils import random_choice_format_list_message
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+import schemas
 
 
 import discord
@@ -62,14 +66,15 @@ class Register(commands.Cog):
         now: datetime.date = date.today()
         user_id: int = interaction.user.id
         
-        data: dict = {
-            "user_id": user_id,
-            "user_name": name,
-            "created_date": str(now),
-            "retirement_date": None
-        }
-        
-        response: requests.Response = requests.post(f"{API_URL}/register_member", json=data)
+        member_data: schemas.Member = schemas.Member(
+            user_id=user_id,
+            user_name=name,
+            created_date=now,
+        )
+        ### schemas.Memberに継承されたBasemodelのjsonメソッドを用いてjsonに変換する
+        member_data_json: str = member_data.json()
+
+        response: requests.Response = requests.post(f"{API_URL}/register_member", data=member_data_json)
 
         if response.status_code == 200:
             msg: str = random_choice_format_list_message(self.REGISTER_COMPLETE_MESSAGES, name=name)

@@ -34,8 +34,9 @@ RUN apt-get update && apt-get install -y ffmpeg && rm -rf /var/lib/apt/lists/*
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# timer.pyと、timer.pyからインポートされているschemas.pyをコンテナにコピー
-COPY ./timer .
+# timerフォルダとschemas.pyを、元の階層構造を保ったままコピー
+COPY ./timer ./timer
+COPY schemas.py .
 
-# コンテナ起動時にtimer.pyを実行
-CMD ["python3", "main.py"]
+# コンテナ起動時にtimer/main.pyを実行
+CMD ["python3", "timer/main.py"]
