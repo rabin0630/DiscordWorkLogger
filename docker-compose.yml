@@ -6,6 +6,8 @@ services:
     restart: always
     env_file:
       - .env
+    environment:
+      - TZ=Asia/Tokyo
 
     ports:
       - "3306:3306"
@@ -22,6 +24,7 @@ services:
     environment:
       # Dockerのネットワーク経由でMySQLに繋ぐためにホスト名を上書き
       - MYSQL_HOST=mysql
+      - TZ=Asia/Tokyo
     ports:
       - "8000:8000"
     volumes:
@@ -38,6 +41,7 @@ services:
     environment:
       - PMA_HOST=mysql
       - PMA_PORT=3306
+      - TZ=Asia/Tokyo
     ports:
       - "8080:80"
     depends_on:

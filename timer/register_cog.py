@@ -76,8 +76,15 @@ class Register(commands.Cog):
     # 名前を登録する
     @app_commands.command(name=f"register{index}", description="名前を登録します")
     async def register_command(self, interaction: discord.Interaction, name: str):
+        """
+        コマンドしたユーザーのuser_idを用いて、登録したuser_nameをdiscordに返す関数
+        
+        @param interaction: interactionの中にあるuser.id
+        @return: discordに登録されたuser_name
+        """
         if not name:
-            return interaction.response.send_message("名前を書くのだ")
+            await interaction.response.send_message("名前を書くのだ")
+            return
         
         now: datetime.date = date.today()
         user_id: int = interaction.user.id
