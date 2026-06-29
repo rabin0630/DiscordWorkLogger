@@ -7,4 +7,4 @@ timer_bot.log
 .venv
 .vscode
 timer/wave
-timer/__pycache__
+__pycache__/

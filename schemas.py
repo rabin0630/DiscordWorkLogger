@@ -21,6 +21,12 @@ class Member(BaseModel):
 class MemberIdOnly(BaseModel):
     user_id         : int
 
+class AttendanceCreate(BaseModel):
+    # 出勤をする時のschemas
+    user_id         : int
+    date            : datetime.date
+    start_time      : datetime.datetime
+
 class AttendanceRecord(BaseModel):
     """ 
     出退勤を管理するテーブル
