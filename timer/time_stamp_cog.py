@@ -1,10 +1,11 @@
+from settings_env import API_URL
+from timer.utils import random_choice_format_list_message
 from discord import interactions
 import time
 from datetime import datetime
-import asyncio
-import random
 import datetime
 from settings_env import env_mode
+import requests
 
 import sys
 import os
@@ -25,7 +26,7 @@ class Time_Stamp(commands.Cog):
   def __init__(self, bot):
     self.bot = bot
 
-  @app_commands.command(name=f"in{index}",description="出勤します")
+  @app_commands.command(name=f"start_work{index}",description="出勤します")
   async def work_in(self,interaction:Interaction):
     user = interaction.user.mention
     
@@ -41,4 +42,9 @@ class Time_Stamp(commands.Cog):
 
     user_data_json: str = user_data.json()
 
-    #TODO:aiohttpでapiに送信する。
+    response: requests.Response = requests.post(f"{API_URL}/start_work", data=user_data_json)
+
+    # TODO データベースにあるuser_nameを用いてmsgをformatする
+    if response.status_code == 200:
+        msg: str = random_choice_format_list_message(self.REGISTER_COMPLETE_MESSAGES, name=name)
+        await interaction.response.send_message(msg)
