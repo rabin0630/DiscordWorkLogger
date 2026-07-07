@@ -34,6 +34,7 @@ def get_db():
 ## post
 
 ### 1. 出勤打刻
+# TODO
 @app.post('/create_clock_in')
 async def create_attendance_record(attendance_record: schemas.AttendanceRecord, db: Session = Depends(get_db)):
   return crud.stamp_clock_in(db, attendance_record)
