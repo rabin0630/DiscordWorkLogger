@@ -8,17 +8,17 @@ sequenceDiagram
     participant DB as データベース
 
     User->>Bot: /start_work コマンド実行
-    Bot->>Bot: start-1.ユーザーID、現在の日付、時刻を取得
+    Bot->>Bot: 1-start.ユーザーID、現在の日付、時刻を取得
     Bot->>Bot: 取得した情報をuser_data_json変数に格納
-    Bot->>API: end-1.POST /start_work
+    Bot->>API: 1-end.POST /start_work
     Note right of Bot: JSONデータ(user_data_json)を送信
 
     break 通信失敗の場合
         API-->>Bot: タイムアウト等の接続エラー
         Bot-->>User: 「APIサーバーと通信できませんでした」というメッセージを送信
     end
-    API ->>API:start-2.CRUD操作
-    API->>DB: end-2.ユーザー状態の確認とデータの保存リクエスト
+    API ->>API:2-start.CRUD操作
+    API->>DB: 2-end.ユーザー状態の確認とデータの保存リクエスト
 
     alt 保存成功 (ステータスコード: 200)
         DB-->>API: 保存完了
@@ -58,3 +58,19 @@ flowchart TD
 
 ```
 
+## 2.CRUD操作
+
+```mermaid
+---
+title: start_workのCRUD操作
+config:
+---
+flowchart TD
+    A(APIリクエスト受信) --> B{1. ユーザー登録の確認<br/>Read}
+    B -- 未登録 --> C[ユーザー非存在エラーを返す]
+    B -- 登録済み --> D{2. 現在の出勤状態確認<br/>Read}
+    D -- すでに出勤中 --> E[重複エラーを返す]
+    D -- 出勤していない --> F[3. 新規の出勤記録を保存<br/>Create]
+    F --> G[4. ユーザーの状態を出勤中に更新<br/>Update]
+    G --> H(保存完了レスポンスを返す)
+```
