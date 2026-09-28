@@ -34,6 +34,22 @@ services:
     depends_on:
       - mysql
 
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.timer
+    container_name: timer
+    restart: always
+    env_file:
+      - .env
+    environment:
+      # Dockerのネットワーク経由でAPIに繋ぐためにURLを上書き
+      - API_BASE_URL=http://api:8000
+    volumes:
+      - .:/app
+    depends_on:
+      - api
+
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
     container_name: phpmyadmin

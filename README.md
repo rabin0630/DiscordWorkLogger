@@ -86,13 +86,14 @@ DockerとDocker Composeを使用する。
 
 # アプリケーションの実行
 
-## APIサーバーとDBの起動
+## 起動
 `$docker compose up -d`
 
 起動すると下記のサービスが立ち上がる。
 
 | サービス | URL |
 | --- | --- |
+| Discord Bot | - |
 | APIサーバー | `http://localhost:8000` |
 | APIドキュメント(Swagger UI) | `http://localhost:8000/docs` |
 | phpMyAdmin | `http://localhost:8080` |
@@ -100,17 +101,15 @@ DockerとDocker Composeを使用する。
 
 テーブルはAPIサーバーの起動時に`models.py`の定義から自動で作成される。
 
-## Discord Botの起動
-1. `$docker build -f Dockerfile.timer -t timer .` :イメージの作成
-2. `$docker create --env-file .env -v $(pwd):/app --name timer timer` :コンテナの作成
-3. `$docker start timer` :コンテナの起動
+BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続するため、`.env`の`API_BASE_URL`は起動時に上書きされる。
 
-※ 作り直す場合は`$docker rm -f timer`で古いコンテナを削除してから2.を実行する。
-※ `requirements.txt`を変更した場合は1.からやり直す。
+## 停止・再起動
+* `$docker compose down` :全てのサービスを停止
+* `$docker compose restart bot` :Botのみ再起動(コードの変更を反映)
+* `$docker compose up -d --build` :イメージを作り直して起動(`requirements.txt`を変更した場合)
 
 ## ログの確認
-* `$docker logs timer` :Botのログを全て表示
-* `$docker logs -f timer` :Botのログをリアルタイムで表示
+* `$docker compose logs -f bot` :Botのログをリアルタイムで表示
 * `$docker compose logs -f api` :APIサーバーのログをリアルタイムで表示
 
 # コマンド一覧
