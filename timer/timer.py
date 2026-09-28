@@ -1,7 +1,6 @@
 import time
 from datetime import datetime
 import asyncio
-import datetime
 from settings_env import env_mode
 from utils import random_choice_format_list_message
 
@@ -218,7 +217,6 @@ class Timer(commands.Cog):
         front_time = interaction.created_at.timestamp()
         back_time = time.time()
         delay = back_time - front_time
-        logging.info(f"[{command_name}] バックエンド到達時刻: {datetime.fromtimestamp(back_time).strftime('%H:%M:%S.%f')}")
         logging.info(f"[{command_name}] フロントエンドから {delay:.3f} 秒遅延して反映されました。")
         return front_time
 
