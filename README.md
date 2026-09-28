@@ -136,6 +136,7 @@ BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続�
 * `$docker compose logs -f api` :APIサーバーのログをリアルタイムで表示
 
 # コマンド一覧
+## timer
 | コマンド | 内容 |
 | --- | --- |
 | `/timer {minutes}` | 指定した分数のタイマーをセットする |
@@ -144,9 +145,13 @@ BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続�
 | `/stoptimer` | タイマーを停止する |
 | `/showtimer` | タイマーの残り時間を表示する |
 | `/pomodorotimer {sets}` | ポモドーロタイマーをセットする(デフォルトは4セット) |
+
+## work_stamp
+| コマンド | 内容 |
 | `/register {name}` | 名前を登録する |
 | `/myname` | 登録した名前を確認する |
 | `/start_work` | 出勤を記録する |
+|　`/stop_work`　| 退勤を記録する　|
 
 # API一覧
 | メソッド | パス | 内容 |
