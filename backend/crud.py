@@ -1,6 +1,4 @@
-import models,schemas
-from datetime import datetime
-from sqlalchemy import update
+import models, schemas
 from sqlalchemy.orm import Session
 
 from models import Member

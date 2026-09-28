@@ -1,5 +1,4 @@
-import schemas
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import models, schemas, crud

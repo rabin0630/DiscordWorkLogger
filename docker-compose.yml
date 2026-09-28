@@ -28,7 +28,8 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - .:/app
+      # APIのフォルダだけを読み込む
+      - ./backend:/app
     working_dir: /app
     command: bash -c "pip install -r requirements.txt && uvicorn from_discord:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
@@ -36,8 +37,7 @@ services:
 
   bot:
     build:
-      context: .
-      dockerfile: Dockerfile.timer
+      context: ./frontend
     container_name: timer
     restart: always
     env_file:
@@ -46,7 +46,8 @@ services:
       # Dockerのネットワーク経由でAPIに繋ぐためにURLを上書き
       - API_BASE_URL=http://api:8000
     volumes:
-      - .:/app
+      # Botのフォルダだけを読み込む
+      - ./frontend:/app
     depends_on:
       - api
 

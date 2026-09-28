@@ -1,5 +1,4 @@
 import time
-from datetime import datetime
 import asyncio
 from settings_env import env_mode
 from utils import random_choice_format_list_message
