@@ -63,7 +63,9 @@ flowchart LR
 | `frontend/register_cog.py` | ユーザー登録機能 |
 | `frontend/time_stamp_cog.py` | 出勤記録機能 |
 | `backend/` | APIサーバー |
-| `backend/from_discord.py` | APIのエンドポイント定義 |
+| `backend/main.py` | APIの起動処理とルーターの登録 |
+| `backend/routers/` | APIのエンドポイント定義。機能ごとにファイルを分割 |
+| `backend/database.py` | DBの接続設定 |
 | `backend/crud.py` | DBの読み書き処理 |
 | `backend/models.py` | テーブル定義(SQLAlchemy) |
 | `backend/schemas.py` | リクエストの型定義(Pydantic) |

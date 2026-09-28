@@ -2,7 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import models
 from database import engine
-from routers import routers
+import importlib
+import pkgutil
+import routers
 
 
 # データベースの初期設定的なやつ
@@ -20,5 +22,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(routers.router)
+# routersフォルダの中のファイルを全て読み込み、エンドポイントを登録する
+# ※ routersフォルダに置くファイルには、必ずrouterという名前でAPIRouterを定義する
+for module_info in pkgutil.iter_modules(routers.__path__):
+    module = importlib.import_module(f"routers.{module_info.name}")
+    app.include_router(module.router)
 

@@ -9,7 +9,7 @@ sequenceDiagram
     autonumber
     actor User as Discordユーザー
     participant Bot as Discord Bot
-    participant API as FastAPI (from_discord.py)
+    participant API as FastAPI (routers/members.py)
     participant DB as データベース (crud.py / models.py)
 
     User->>Bot: スラッシュコマンド実行（例: /register）
