@@ -31,7 +31,7 @@ services:
       # APIのフォルダだけを読み込む
       - ./backend:/app
     working_dir: /app
-    command: bash -c "pip install -r requirements.txt && uvicorn from_discord:app --host 0.0.0.0 --port 8000 --reload"
+    command: bash -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       - mysql
 

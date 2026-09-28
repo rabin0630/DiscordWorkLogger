@@ -1,8 +1,16 @@
 from database_config import MYSQL_INFO
-
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
+
+
+# DBのセッションを取得するやつ。コピペOK
+def get_db():
+  db = SessionLocal()
+  try:
+    yield db
+  finally:
+    db.close()
 
 # 接続用コードへの適用
 user = MYSQL_INFO['USER']
