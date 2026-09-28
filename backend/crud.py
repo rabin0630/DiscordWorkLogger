@@ -1,9 +1,7 @@
-import models,schemas
-from datetime import datetime
-from sqlalchemy import update
+import backend.models as models,backend.schemas as schemas
 from sqlalchemy.orm import Session
 
-from models import Member
+from backend.models import Member
 # データベースの操作をする
 
 
