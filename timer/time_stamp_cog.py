@@ -1,5 +1,5 @@
 from settings_env import API_URL
-from timer.utils import random_choice_format_list_message
+from utils import random_choice_format_list_message
 from discord import interactions
 import time
 from datetime import datetime
