@@ -6,5 +6,4 @@ service_account.json
 timer_bot.log
 .venv
 .vscode
-timer/wave
 __pycache__/

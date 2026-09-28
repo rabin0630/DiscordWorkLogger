@@ -6,8 +6,6 @@ from settings_env import DISCORD_TOKEN,ACTIVITY,intents
 from dotenv import load_dotenv
 from timer import Timer
 from time_stamp_cog import Time_Stamp
-from voicevox_cog import Voicevox
-from gemini_zundamon_cog import Gemini_Zundamon
 from register_cog import Register
 from discord.ext import commands
 # NOTE
@@ -63,8 +61,6 @@ async def on_ready():
     print(f"Logged in as {bot.user}!")
     await bot.add_cog(Timer(bot))
     await bot.add_cog(Time_Stamp(bot))
-    await bot.add_cog(Voicevox(bot))
-    await bot.add_cog(Gemini_Zundamon(bot))
     await bot.add_cog(Register(bot))
 
     # グローバルコマンドを特定のサーバーにコピーして即時反映させるのだ！
