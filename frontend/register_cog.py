@@ -1,9 +1,6 @@
-from aiohttp import request
 import discord
-import time
 import datetime
 from datetime import date
-import asyncio
 from settings_env import env_mode,API_URL
 from utils import random_choice_format_list_message
 import sys
@@ -12,7 +9,6 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 import backend.schemas as schemas
 
 
-import discord
 from discord import app_commands
 from discord.ext import commands
 import requests

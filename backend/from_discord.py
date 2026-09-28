@@ -1,5 +1,4 @@
-import backend.schemas as schemas
-from fastapi import FastAPI, Depends, Header
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 import backend.models as models, backend.schemas as schemas, bot.crud as crud

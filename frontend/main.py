@@ -1,7 +1,6 @@
 import os
 import discord
 
-from settings_env import DISCORD_TOKEN,ACTIVITY,intents
 
 from dotenv import load_dotenv
 from timer import Timer
