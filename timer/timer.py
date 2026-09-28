@@ -1,7 +1,6 @@
 import time
 from datetime import datetime
 import asyncio
-import random
 import datetime
 from settings_env import env_mode
 from utils import random_choice_format_list_message
@@ -115,7 +114,7 @@ class Timer(commands.Cog):
         channelにセットする値
         """
         self.bot = bot
-        self.activated_timer_data = {}  # タイマーをメモリで管理する簡易的なデータベース
+        self.activated_timer_data = {}  # タイマーをメモリで管理するデータベース
         self.timer_tasks = {}
 
     # TODO: グローバルから引っ張ってるから良くない
@@ -169,11 +168,18 @@ class Timer(commands.Cog):
         return
 
     # タイマーを開始する
-    async def countdown(self, user_id: int, end_message: list = None):
-        """
-        タイマーを開始する
-        timer_taskで登録された残り時間を元にカウントダウンを実行
-        終了予定時刻（end_time）まで一気にスリープして待機する
+    async def countdown(self, user_id: int, end_message: list = None) -> None:
+        """タイマーを開始する関数
+
+        timer_taskで登録された残り時間を元にカウントダウンを実行し、
+        終了予定時刻（end_time）まで一気にスリープして待機する。
+
+        Args:
+            user_id (int): ユーザーのID
+            end_message (:obj:`list`, optional): 終了時に送信するメッセージのリスト
+
+        Returns:
+            None: 戻り値なし
         """
         if not self.activated_timer_data.get(user_id):
             return print("タイマーが起動していません")

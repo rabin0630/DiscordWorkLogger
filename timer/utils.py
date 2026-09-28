@@ -8,6 +8,6 @@ def random_choice_format_list_message(list_message: list[str], **kwargs) -> str:
     @param list_message: 送信メッセージ一覧
     @return: ランダムで選択されてフォーマットされた文章。
     """
-    message = random.choice(list_message)
-    return message.format(**kwargs)
+    chose_message = random.choice(list_message)
+    return chose_message.format(**kwargs)
 
