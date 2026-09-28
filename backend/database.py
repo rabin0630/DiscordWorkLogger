@@ -1,4 +1,4 @@
-from backend.database_config import MYSQL_INFO
+from database_config import MYSQL_INFO
 
 from sqlalchemy import create_engine
 from sqlalchemy.ext.declarative import declarative_base

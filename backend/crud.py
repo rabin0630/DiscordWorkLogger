@@ -1,7 +1,7 @@
-import backend.models as models,backend.schemas as schemas
+import models, schemas
 from sqlalchemy.orm import Session
 
-from backend.models import Member
+from models import Member
 # データベースの操作をする
 
 

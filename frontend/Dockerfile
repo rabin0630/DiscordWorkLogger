@@ -1,24 +1,4 @@
-#NOTES
-## 1.docker build -f Dockerfile.timer -t timer . でイメージを作成する
-#### buildの-fオプションはDockerfileの格納パスを指定する（オプション）
-#### buildの-tオプションはイメージ名を指定する（オプション）
-
-## 1.5 今の古いコンテナを消す docker rm -f timer
-
-## 2.docker imagesでイメージが作成されたかを確認
-
-## 3.docker create --env-file .env -v $(pwd):/app --name timer timer でイメージからコンテナの状態にする
-#### createの--nameオプションはコンテナ名を指定する（オプション）
-
-## 4.docker ps -aで作成したコンテナを確認
-#### psの-aオプションはコンテナをすべて表示する（オプション）
-
-## 5.docker start timer でコンテナを起動
-
-
-### docker runの--env-fileで環境変数を渡せる
-
-# docker build --platform linux/amd64 -f Dockerfile.timer -t sottorabin/discord_timer .
+# docker build --platform linux/amd64 -t sottorabin/discord_timer ./frontend
 # docker push sottorabin/discord_timer:latest
 
 FROM python:3.13-slim
@@ -31,9 +11,8 @@ ENV TZ=Asia/Tokyo
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# timerフォルダとschemas.pyを、元の階層構造を保ったままコピー
-COPY ./timer ./timer
-COPY schemas.py .
+# Botのファイルをコピー
+COPY . .
 
-# コンテナ起動時にtimer/main.pyを実行
-CMD ["python3", "timer/main.py"]
+# コンテナ起動時にmain.pyを実行
+CMD ["python3", "main.py"]

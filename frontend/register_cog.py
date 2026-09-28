@@ -1,14 +1,9 @@
 import discord
 import datetime
+import json
 from datetime import date
 from settings_env import env_mode,API_URL
 from utils import random_choice_format_list_message
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import backend.schemas as schemas
-
-
 from discord import app_commands
 from discord.ext import commands
 import requests
@@ -85,15 +80,15 @@ class Register(commands.Cog):
         now: datetime.date = date.today()
         user_id: int = interaction.user.id
         
-        member_data: schemas.Member = schemas.Member(
-            user_id=user_id,
-            user_name=name,
-            created_date=now,
-        )
-        ### schemas.Memberに継承されたBasemodelのjsonメソッドを用いてjsonに変換する
-        member_data_json: str = member_data.json()
+        # APIに送るデータ。日付はJSONで送れるように文字列にする
+        member_data: dict = {
+            "user_id": user_id,
+            "user_name": name,
+            "created_date": str(now),
+        }
+        member_data_json: str = json.dumps(member_data)
 
-        response: requests.Response = requests.post(f"{API_URL}/register_member", data=member_data_json)
+        response: requests.Response = requests.post(f"{API_URL}/register_member", data=member_data_json, headers={"Content-Type": "application/json"})
 
 
         if response.status_code == 200:
@@ -126,13 +121,10 @@ class Register(commands.Cog):
         """
         user_id = interaction.user.id
         
-        user_data: schemas.MemberIdOnly = schemas.MemberIdOnly(
-            user_id = user_id
-        )
+        user_data: dict = {"user_id": user_id}
+        user_data_json: str = json.dumps(user_data)
 
-        user_data_json: str = user_data.json()
-
-        response: requests.Response = requests.post(f"{API_URL}/get_name", data=user_data_json)
+        response: requests.Response = requests.post(f"{API_URL}/get_name", data=user_data_json, headers={"Content-Type": "application/json"})
 
         if response.status_code == 409:
             msg: str = random_choice_format_list_message(self.NO_DATA_AND_REGISTER_NAME_MESSAGES)

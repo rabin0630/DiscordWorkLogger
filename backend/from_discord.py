@@ -1,8 +1,8 @@
 from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
-import backend.models as models, backend.schemas as schemas, bot.crud as crud
-from backend.database import SessionLocal, engine
+import models, schemas, crud
+from database import SessionLocal, engine
 from fastapi import HTTPException
 
 # データベースの初期設定的なやつ

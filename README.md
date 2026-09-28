@@ -7,7 +7,7 @@ Discord Bot(discord.py)とAPIサーバー(FastAPI)、データベース(MySQL)�
 出退勤時にはDiscordで挨拶をしていたので、挨拶のついでにワンクリックで出退勤を記録できるようにしようと考えた。
 まずdiscord.pyの使い方を学ぶために作業用タイマーを作り、その後に出退勤記録の機能を開発している。
 
-詳細な要件は[Timer_Product_Requirements_Document.md](./Timer_Product_Requirements_Document.md)に記載している。
+詳細な要件は[Timer_Product_Requirements_Document.md](./docs/Timer_Product_Requirements_Document.md)に記載している。
 
 ## 主な機能
 * **作業用タイマー**: 分単位のタイマー、一時停止・再開・停止、ポモドーロタイマー
@@ -24,27 +24,50 @@ Discord Bot(discord.py)とAPIサーバー(FastAPI)、データベース(MySQL)�
 | インフラ | Docker / Docker Compose |
 
 ## 構成
+3層アーキテクチャで、Bot・API・DBの役割を分けている。
+
 ```mermaid
 flowchart LR
     User[ユーザー] -->|スラッシュコマンド| Discord
-    Discord <--> Bot[Discord Bot<br>timer/]
-    Bot -->|HTTP| API[APIサーバー<br>FastAPI]
-    API --> DB[(MySQL)]
-    PMA[phpMyAdmin] --> DB
+    Discord <--> Bot
+    subgraph プレゼンテーション層
+        Bot[Discord Bot<br>frontend/]
+    end
+    subgraph アプリケーション層
+        API[APIサーバー<br>backend/]
+    end
+    subgraph データ層
+        DB[(MySQL)]
+    end
+    Bot -->|HTTP| API
+    API --> DB
 ```
 
+| 層 | 役割 | 実装 |
+| --- | --- | --- |
+| プレゼンテーション層 | Discordでユーザーからコマンドを受け取り、結果を返す | `frontend/`(discord.py) |
+| アプリケーション層 | 登録や出退勤の記録など、アプリのルールに従って処理する | `backend/`(FastAPI) |
+| データ層 | データを保存する | MySQL |
+
+### 設計で意識したこと
+* BotとAPIはHTTP通信だけでつながり、お互いのコードを直接読み込まない
+* BotはDBに直接アクセスせず、必ずAPIを経由する
+* タイマー機能はDBを使わないため、Botの中だけで完結させている
+
+### ファイル構成
 | ディレクトリ・ファイル | 内容 |
 | --- | --- |
-| `timer/` | Discord Bot本体。機能ごとにCogとして分割 |
-| `timer/main.py` | Botの起動処理とCogの登録 |
-| `timer/timer.py` | タイマー機能 |
-| `timer/register_cog.py` | ユーザー登録機能 |
-| `timer/time_stamp_cog.py` | 出勤記録機能 |
-| `from_discord.py` | APIのエンドポイント定義 |
-| `crud.py` | DBの読み書き処理 |
-| `models.py` | テーブル定義(SQLAlchemy) |
-| `schemas.py` | リクエストの型定義(Pydantic) |
-| `docs/` | フローチャートやシーケンス図などの設計資料 |
+| `frontend/` | Discord Bot。機能ごとにCogとして分割 |
+| `frontend/main.py` | Botの起動処理とCogの登録 |
+| `frontend/timer.py` | タイマー機能 |
+| `frontend/register_cog.py` | ユーザー登録機能 |
+| `frontend/time_stamp_cog.py` | 出勤記録機能 |
+| `backend/` | APIサーバー |
+| `backend/from_discord.py` | APIのエンドポイント定義 |
+| `backend/crud.py` | DBの読み書き処理 |
+| `backend/models.py` | テーブル定義(SQLAlchemy) |
+| `backend/schemas.py` | リクエストの型定義(Pydantic) |
+| `docs/` | 要件定義、フローチャートやシーケンス図などの設計資料 |
 
 ---
 
@@ -99,14 +122,14 @@ DockerとDocker Composeを使用する。
 | phpMyAdmin | `http://localhost:8080` |
 | MySQL | `localhost:3306` |
 
-テーブルはAPIサーバーの起動時に`models.py`の定義から自動で作成される。
+テーブルはAPIサーバーの起動時に`backend/models.py`の定義から自動で作成される。
 
 BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続するため、`.env`の`API_BASE_URL`は起動時に上書きされる。
 
 ## 停止・再起動
 * `$docker compose down` :全てのサービスを停止
 * `$docker compose restart bot` :Botのみ再起動(コードの変更を反映)
-* `$docker compose up -d --build` :イメージを作り直して起動(`requirements.txt`を変更した場合)
+* `$docker compose up -d --build` :イメージを作り直して起動(`frontend/requirements.txt`を変更した場合)
 
 ## ログの確認
 * `$docker compose logs -f bot` :Botのログをリアルタイムで表示

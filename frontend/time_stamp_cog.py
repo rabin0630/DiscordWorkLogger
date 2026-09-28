@@ -1,14 +1,9 @@
 from settings_env import API_URL
 from utils import random_choice_format_list_message
 import datetime
+import json
 from settings_env import env_mode
 import requests
-
-import sys
-import os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
-import backend.schemas as schemas
-
 
 from discord import app_commands,Interaction
 from discord.ext import commands
@@ -27,15 +22,15 @@ class Time_Stamp(commands.Cog):
     date_now = datetime.date.today()
     start_time_now = datetime.datetime.now()
         
-    user_data: schemas.AttendanceCreate = schemas.AttendanceCreate(
-        user_id = user_id,
-        date = date_now,
-        start_time = start_time_now
-    )
+    # APIに送るデータ。日付と時刻はJSONで送れるように文字列にする
+    user_data: dict = {
+        "user_id": user_id,
+        "date": str(date_now),
+        "start_time": start_time_now.isoformat(),
+    }
+    user_data_json: str = json.dumps(user_data)
 
-    user_data_json: str = user_data.json()
-
-    response: requests.Response = requests.post(f"{API_URL}/start_work", data=user_data_json)
+    response: requests.Response = requests.post(f"{API_URL}/start_work", data=user_data_json, headers={"Content-Type": "application/json"})
 
     # TODO データベースにあるuser_nameを用いてmsgをformatする
     if response.status_code == 200:
