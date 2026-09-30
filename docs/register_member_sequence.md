@@ -8,7 +8,7 @@ sequenceDiagram
     participant Bot as Bot<br>(frontend/register_cog.py)
     participant Router as Router<br>(routers/members.py)
     participant Service as Service<br>(services/member_service.py)
-    participant CRUD as CRUD<br>(crud.py)
+    participant CRUD as CRUD<br>(crud/members.py)
     participant DB as MySQL
 
     User->>Bot: /register {name}

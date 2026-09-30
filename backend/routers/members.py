@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
-import schemas, crud
+import schemas
+from crud import members as member_crud
 from database import get_db
 from services import member_service
 
@@ -26,7 +27,7 @@ async def get_name(member : schemas.MemberIdOnly, db: Session = Depends(get_db))
   # コマンドしたユーザーのuserIDを使用し、データベースにある名前を返す関数
   # もし登録されていない場合はstatus_code=409を返す
   # select
-  result = crud.get_name_by_userid(db,member)
+  result = member_crud.get_name_by_userid(db,member)
 
   if result == "no_name":
     raise HTTPException(status_code=409, detail="名前は登録されていません")

@@ -66,7 +66,8 @@ flowchart LR
 | `backend/main.py` | APIの起動処理とルーターの登録 |
 | `backend/routers/` | APIのエンドポイント定義。機能ごとにファイルを分割 |
 | `backend/database.py` | DBの接続設定 |
-| `backend/crud.py` | DBの読み書き処理 |
+| `backend/crud/` | DBの読み書き処理。機能ごとにファイルを分割 |
+| `backend/services/` | 重複チェックなどのビジネスロジック |
 | `backend/models.py` | テーブル定義(SQLAlchemy) |
 | `backend/schemas.py` | リクエストの型定義(Pydantic) |
 | `docs/` | 要件定義、フローチャートやシーケンス図などの設計資料 |

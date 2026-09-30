@@ -10,7 +10,7 @@ sequenceDiagram
     actor User as Discordユーザー
     participant Bot as Discord Bot
     participant API as FastAPI (routers/members.py)
-    participant DB as データベース (crud.py / models.py)
+    participant DB as データベース (crud/members.py / models.py)
 
     User->>Bot: スラッシュコマンド実行（例: /register）
     note over User, Bot: ユーザーID（19980630）や名前が自動でBotに渡る
@@ -19,7 +19,7 @@ sequenceDiagram
     
     API->>API: データのバリデーション<br/>(schemas.pyで型チェック)
     
-    API->>DB: 登録処理の呼び出し<br/>(crud.pyでMemberテーブルに追加・更新)
+    API->>DB: 登録処理の呼び出し<br/>(crud/members.pyでMemberテーブルに追加・更新)
     
     DB-->>API: 登録完了
     

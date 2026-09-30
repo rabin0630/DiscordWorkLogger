@@ -1,5 +1,6 @@
 from sqlalchemy.orm import Session
-import models, schemas, crud
+import models, schemas
+from crud import members as member_crud
 
 # メンバー関係のビジネスロジック
 # HTTPのステータスコードは扱わず、ルールに違反した場合は例外で呼び出し元に伝える
@@ -28,12 +29,12 @@ def register_member(db: Session, member: schemas.Member) -> models.Member:
         MemberNameAlreadyExistsError: user_nameがすでに使われている場合
     """
     # ① IDが重複していないかチェック
-    if crud.get_member_by_id(db, member.user_id):
+    if member_crud.get_member_by_id(db, member.user_id):
         raise MemberIdAlreadyExistsError()
 
     # ② 名前が重複していないかチェック
-    if crud.get_member_by_name(db, member.user_name):
+    if member_crud.get_member_by_name(db, member.user_name):
         raise MemberNameAlreadyExistsError()
 
     # ③ どちらも問題なければ登録する
-    return crud.create_member(db, member)
+    return member_crud.create_member(db, member)
