@@ -20,17 +20,18 @@ from models import Member
 
 """
 
-## Create (出勤時)
-def register_member(db: Session,member: schemas.Member):
-    # ① まずIDが被ってないかチェック
-    if db.query(models.Member).filter(models.Member.user_id == member.user_id).first():
-        return "id_error"
-    
-    # ② 次に名前が被ってないかチェック
-    if db.query(models.Member).filter(models.Member.user_name == member.user_name).first():
-        return "name_error"
+## Read (メンバー)
+def get_member_by_id(db: Session, user_id: int) -> models.Member | None:
+    # user_idでメンバーを探す。見つからない場合はNoneを返す
+    return db.query(models.Member).filter(models.Member.user_id == user_id).first()
 
-    # ③ どっちも問題なければここで初めて登録（db.add）する
+def get_member_by_name(db: Session, user_name: str) -> models.Member | None:
+    # user_nameでメンバーを探す。見つからない場合はNoneを返す
+    return db.query(models.Member).filter(models.Member.user_name == user_name).first()
+
+## Create (メンバー)
+def create_member(db: Session, member: schemas.Member) -> models.Member:
+    # メンバーを登録する。重複チェックはservices/member_service.pyで行う
     data_base = models.Member(
         user_id = member.user_id,
         user_name = member.user_name,

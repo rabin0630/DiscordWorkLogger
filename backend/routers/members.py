@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 import schemas, crud
 from database import get_db
+from services import member_service
 
 # メンバー関係のエンドポイントをまとめるルーター
 router = APIRouter(tags=["members"])
@@ -10,12 +11,12 @@ router = APIRouter(tags=["members"])
 
 @router.post('/register_member')
 async def register_member(member: schemas.Member, db: Session = Depends(get_db)):
-  result = crud.register_member(db,member)
-  print(result)
-
-  if result == "id_error":
+  # ルールの判断はserviceに任せ、routerは例外をHTTPのステータスコードに変換する
+  try:
+      result = member_service.register_member(db, member)
+  except member_service.MemberIdAlreadyExistsError:
       raise HTTPException(status_code=409, detail="このIDはすでに使われています")
-  elif result == "name_error":
+  except member_service.MemberNameAlreadyExistsError:
       raise HTTPException(status_code=409, detail="この名前はすでに使われています")
 
   return result
