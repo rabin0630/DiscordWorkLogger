@@ -2,8 +2,10 @@ import datetime
 from pydantic import BaseModel
 from typing import Optional
 
-# 型の定義
-###models.pyで設計した情報をもとに型を決める
+
+# APIでやりとりするデータの型定義(TypeScriptのinterfaceのようなもの)
+# DBのテーブル定義はmodels.pyを参照
+
 
 """各テーブルのdocsを書くときのテンプレ。コピペ用として使用
 <テーブルの簡単な説明。1行から3行に収める>
