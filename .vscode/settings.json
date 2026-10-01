@@ -1,3 +1,8 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python"
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    // src/の中のファイル同士のimportを、エディタが見つけられるようにする
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/frontend/src",
+        "${workspaceFolder}/backend/src"
+    ]
 }

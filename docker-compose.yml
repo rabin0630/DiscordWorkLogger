@@ -30,8 +30,9 @@ services:
     volumes:
       # APIのフォルダだけを読み込む
       - ./backend:/app
-    working_dir: /app
-    command: bash -c "pip install -r requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
+    # アプリのコードがあるsrc/で起動する(requirements.txtは1つ上のフォルダにある)
+    working_dir: /app/src
+    command: bash -c "pip install -r ../requirements.txt && uvicorn main:app --host 0.0.0.0 --port 8000 --reload"
     depends_on:
       - mysql
 
@@ -46,8 +47,8 @@ services:
       # Dockerのネットワーク経由でAPIに繋ぐためにURLを上書き
       - API_BASE_URL=http://api:8000
     volumes:
-      # Botのフォルダだけを読み込む
-      - ./frontend:/app
+      # Botのコード(src/)だけを読み込む
+      - ./frontend/src:/app
     depends_on:
       - api
 

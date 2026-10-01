@@ -5,7 +5,7 @@ APIの中をRouter・Service・CRUDの3つの層に分けたときの、メン�
 ```mermaid
 sequenceDiagram
     actor User as ユーザー
-    participant Bot as Bot<br>(frontend/register_cog.py)
+    participant Bot as Bot<br>(frontend/src/register_cog.py)
     participant Router as Router<br>(routers/members.py)
     participant Service as Service<br>(services/member_service.py)
     participant CRUD as CRUD<br>(crud/members.py)

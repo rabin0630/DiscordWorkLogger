@@ -57,19 +57,21 @@ flowchart LR
 ### ファイル構成
 | ディレクトリ・ファイル | 内容 |
 | --- | --- |
-| `frontend/` | Discord Bot。機能ごとにCogとして分割 |
-| `frontend/main.py` | Botの起動処理とCogの登録 |
-| `frontend/timer.py` | タイマー機能 |
-| `frontend/register_cog.py` | ユーザー登録機能 |
-| `frontend/time_stamp_cog.py` | 出勤記録機能 |
+| `frontend/` | Discord Bot |
+| `frontend/src/` | Botのコード。機能ごとにCogとして分割 |
+| `frontend/src/main.py` | Botの起動処理とCogの登録 |
+| `frontend/src/timer.py` | タイマー機能 |
+| `frontend/src/register_cog.py` | ユーザー登録機能 |
+| `frontend/src/time_stamp_cog.py` | 出勤記録機能 |
 | `backend/` | APIサーバー |
-| `backend/main.py` | APIの起動処理とルーターの登録 |
-| `backend/routers/` | APIのエンドポイント定義。機能ごとにファイルを分割 |
-| `backend/database.py` | DBの接続設定 |
-| `backend/crud/` | DBの読み書き処理。機能ごとにファイルを分割 |
-| `backend/services/` | 重複チェックなどのビジネスロジック |
-| `backend/models.py` | テーブル定義(SQLAlchemy) |
-| `backend/schemas.py` | リクエストの型定義(Pydantic) |
+| `backend/src/` | APIのコード |
+| `backend/src/main.py` | APIの起動処理とルーターの登録 |
+| `backend/src/routers/` | APIのエンドポイント定義。機能ごとにファイルを分割 |
+| `backend/src/database.py` | DBの接続設定 |
+| `backend/src/crud/` | DBの読み書き処理。機能ごとにファイルを分割 |
+| `backend/src/services/` | 重複チェックなどのビジネスロジック |
+| `backend/src/models.py` | テーブル定義(SQLAlchemy) |
+| `backend/src/schemas.py` | リクエストの型定義(Pydantic) |
 | `docs/` | 要件定義、フローチャートやシーケンス図などの設計資料 |
 
 ---
@@ -125,7 +127,7 @@ DockerとDocker Composeを使用する。
 | phpMyAdmin | `http://localhost:8080` |
 | MySQL | `localhost:3306` |
 
-テーブルはAPIサーバーの起動時に`backend/models.py`の定義から自動で作成される。
+テーブルはAPIサーバーの起動時に`backend/src/models.py`の定義から自動で作成される。
 
 BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続するため、`.env`の`API_BASE_URL`は起動時に上書きされる。
 

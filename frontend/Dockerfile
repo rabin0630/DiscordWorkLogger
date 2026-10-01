@@ -11,8 +11,8 @@ ENV TZ=Asia/Tokyo
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Botのファイルをコピー
-COPY . .
+# Botのコード(src/)だけをコピー
+COPY src/ .
 
 # コンテナ起動時にmain.pyを実行
 CMD ["python3", "main.py"]
