@@ -25,7 +25,6 @@ flowchart LR
 | `/start_work` | 出勤を記録する | 実装中 |
 | `/stop_work` | 退勤を記録する | 未実装 |
 | `/work_status` | 現在の出勤状態を確認する | 予定 |
-| `/monthly_report {year_month}` | 指定した月の総労働時間と出勤回数を表示する。デフォルトは今月 | 予定 |
 
 ## 状態遷移
 - ユーザーの状態は「未登録」「退勤中」「出勤中」の3つ。
@@ -63,7 +62,7 @@ stateDiagram-v2
 | POST | `/start_work` | 出勤時刻を記録する |
 | POST | `/stop_work` | 退勤時刻を記録する |
 | POST | `/work_status` | 現在の出勤状態を返す |
-| POST | `/monthly_report` | 指定月の集計を返す |
+| POST | `/monthly_report` | 指定月の集計を返す。discordでは使わない。webで使うかはwebの基本設計で決める |
 
 ## データモデル設計
 - データベースはMySQLを使用する。
