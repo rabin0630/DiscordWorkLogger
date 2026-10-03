@@ -7,7 +7,9 @@ Discord Bot(discord.py)とAPIサーバー(FastAPI)、データベース(MySQL)�
 出退勤時にはDiscordで挨拶をしていたので、挨拶のついでにワンクリックで出退勤を記録できるようにしようと考えた。
 まずdiscord.pyの使い方を学ぶために作業用タイマーを作り、その後に出退勤記録の機能を開発している。
 
-詳細な要件は[Timer_Product_Requirements_Document.md](./docs/Timer_Product_Requirements_Document.md)に記載している。
+詳細な要件は下記に記載している。
+* [タイマーの要件定義・基本設計](./docs/timer_requirements_and_design/)
+* [出退勤の要件定義・基本設計](./docs/attendance_requirements_and_design/)
 
 ## 主な機能
 * **作業用タイマー**: 分単位のタイマー、一時停止・再開・停止、ポモドーロタイマー
