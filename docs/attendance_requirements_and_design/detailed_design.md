@@ -84,15 +84,22 @@ DiscordWorkLogger/
 │   ├ conftest.py               ## テストの共通準備
 │   └ dependencies.py           ## テスト用DBに差替
 ├ frontend/                     ## Bot本体
+│ ├ cogs/                       画面(コマンドの受付と返信)
+│ │ ├ __init__.py               ## パッケージ化
+│ │ ├ help_cog.py               ## /helpコマンド
+│ │ ├ register_cog.py           ## 名前のコマンド
+│ │ ├ time_stamp_cog.py         ## 出退勤のコマンド
+│ │ └ timer_cog.py              ## タイマーのコマンド
+│ ├ services/                   APIの窓口
+│ │ ├ __init__.py               ## パッケージ化
+│ │ └ api_client.py             ## API呼び出し
 │ ├ tests/                      ## Botのテスト
 │ │ └ unit/                     ## 関数単位のテスト
+│ │   ├ test_help_cog.py        ## /helpのテスト
+│ │   ├ test_register_cog.py    ## 名前の返信のテスト
 │ │   └ test_utils.py           ## 表示形式のテスト
-│ ├ api_client.py               ## API呼び出し
-│ ├ help_cog.py                 ## /helpコマンド
 │ ├ main.py                     ## Botの起動
-│ ├ register_cog.py             ## 名前のコマンド
 │ ├ settings_env.py             ## .envの読み込み
-│ ├ time_stamp_cog.py           ## 出退勤のコマンド
 │ └ utils.py                    ## 表示と文言の部品
 ├ (.env)                        ## 秘密の設定値
 ├ .gitignore                    ## Git管理外の指定
@@ -102,16 +109,30 @@ DiscordWorkLogger/
 ```
 
 ### Bot(`frontend/`)
+Botも、バックエンドと同じく役割ごとに分ける。判定やルールはAPIで行うので、Botにビジネスロジック層はない。
+
+| 層 | ディレクトリ・ファイル | やること |
+| --- | --- | --- |
+| 画面 | `cogs/` | コマンドを受け取り、`defer`して、返信を送る |
+| 表示のロジック | `utils.py`、各Cogの返信の文を作る関数(`make_register_reply`など) | APIの結果を、見せる文に変える。Discordを使わないので単体テストできる |
+| APIの窓口 | `services/` | APIを呼ぶ。URL、`X-Bot-Key`、タイムアウト、通信エラーの扱いを1か所にまとめる |
+
+- `cogs/`は`services/`と`utils.py`を使ってよい。`services/`は`cogs/`を使わない。
+- `services/`は、バックエンドの`services/`(ビジネスロジック層)とは役割が違う。フロントエンドでよく使う「APIの窓口」の意味で使う。
+
 | ファイル | 内容 |
 | --- | --- |
-| `main.py` | Botの起動。Cogを読み込む |
+| `main.py` | Botの起動。`cogs/`のCogを読み込む |
 | `settings_env.py` | `.env`の読み込み(`API_BASE_URL`、`BOT_API_KEY`、`OWNER_DISCORD_ID`など) |
-| `api_client.py` | 追加。APIを呼ぶ処理をまとめる(タイムアウト、通信エラーの扱い) |
-| `register_cog.py` | `/register`、`/myname`、`/rename` |
-| `time_stamp_cog.py` | `/start_work`、`/stop_work`、`/work_status`、`/all_work_status` |
-| `help_cog.py` | 追加。`/help` |
-| `utils.py` | メッセージのランダム選択、時刻と時間の表示形式 |
+| `services/api_client.py` | 追加。APIを呼ぶ処理をまとめる(タイムアウト、通信エラーの扱い) |
+| `cogs/register_cog.py` | `/register`、`/myname`、`/rename` |
+| `cogs/time_stamp_cog.py` | `/start_work`、`/stop_work`、`/work_status`、`/all_work_status` |
+| `cogs/help_cog.py` | `/help` |
+| `cogs/timer_cog.py` | タイマーのコマンド(今の`timer.py`の名前を変えて移す) |
+| `utils.py` | メッセージのランダム選択、どのコマンドでも使うメッセージ、時刻と時間の表示形式 |
 | `tests/unit/test_utils.py` | 追加。`utils.py`の表示形式(`format_time`、`format_minutes`、`format_start_time`)のテスト |
+
+- Botは`frontend/`で`python3 main.py`として動かすので、`cogs/`の中からも`from settings_env import ...`、`from services import api_client`のように`frontend/`から見た名前で読み込む。
 
 ### API(`backend/src/`)
 | ファイル | 内容 |
