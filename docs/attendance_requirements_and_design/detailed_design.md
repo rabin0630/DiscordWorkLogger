@@ -16,6 +16,7 @@ Webでの勤怠確認と修正は[Webの詳細設計](../web_attendance_requirem
   - [層の分け方と例外](#層の分け方と例外)
   - [エラーの返し方](#エラーの返し方)
   - [コマンドの登録](#コマンドの登録)
+  - [docstringの書き方](#docstringの書き方)
 - [出勤状態の判定](#出勤状態の判定)
 - [API詳細](#api詳細)
   - [/register_member](#register_member)
@@ -96,7 +97,6 @@ DiscordWorkLogger/
 │ ├ tests/                      ## Botのテスト
 │ │ └ unit/                     ## 関数単位のテスト
 │ │   ├ test_help_cog.py        ## /helpのテスト
-│ │   ├ test_register_cog.py    ## 名前の返信のテスト
 │ │   └ test_utils.py           ## 表示形式のテスト
 │ ├ main.py                     ## Botの起動
 │ ├ settings_env.py             ## .envの読み込み
@@ -213,6 +213,7 @@ def minutes_between(start: datetime, end: datetime) -> int:
 - Discordはコマンドを受け取ってから3秒以内に応答しないとエラーになるため、APIを呼ぶコマンドは最初に`interaction.response.defer()`し、結果は`interaction.followup.send()`で送る。
   - 返信が見える人は`defer`の時に決まるので、自分だけに見せるコマンドは`defer(ephemeral=True)`にする。
 - `api_client.py`は、通信できない・タイムアウト・500番台のどれかなら`ApiUnavailableError`を投げる。各コマンドはこれを受けて、通信できなかった時のメッセージを返す。
+  - 401の時は、エラーのログを残して`InvalidBotKeyError`(`ApiUnavailableError`の子クラス)を投げる。`.env`の`BOT_API_KEY`の設定の間違いなので、従業員には通信できなかった時と同じメッセージを見せる。
 
 ### 層の分け方と例外
 | 層 | やること | 例外 |
@@ -252,6 +253,49 @@ def minutes_between(start: datetime, end: datetime) -> int:
 ### コマンドの登録
 - 出退勤のコマンドには`@app_commands.guild_only()`を付け、DMで使えないようにし、DMのコマンドの候補にも出さないようにする。
 - コマンド名は今と同じく、開発環境では末尾に`_test`を付ける。
+
+### docstringの書き方
+- 詳細設計(各コマンドの単体詳細設計も含む)のコードに付けるdocstringは、Google形式で書く。実装も設計書のコードと同じ形にする。
+- 文は日本語で書く。
+
+```python
+def func(arg1, arg2):
+    """概要
+
+    詳細説明
+
+    Args:
+        引数(arg1)の名前 (引数(arg1)の型): 引数(arg1)の説明
+        引数(arg2)の名前 (:obj:`引数(arg2)の型`, optional): 引数(arg2)の説明
+
+    Returns:
+        戻り値の型: 戻り値の説明
+
+    Raises:
+        例外の名前: 例外の説明
+
+    Yields:
+        戻り値の型: 戻り値についての説明
+
+    Examples:
+
+        関数の使い方
+
+        >>> func(5, 6)
+        11
+
+    Note:
+        注意事項や注釈など
+
+    """
+    value = arg1 + arg2
+    return value
+```
+
+- 当てはまらない項目は書かない(例: 例外を投げない関数には`Raises`を書かない。`Yields`はジェネレーターの時だけ書く)。
+- 概要は1行で書く。詳細説明、`Examples`、`Note`は、必要な時だけ書く。
+- クラス(`dataclass`も含む)は、クラスのdocstringの`Attributes:`に、各属性を`名前 (型): 説明`の形で書く。
+- 今あるコードの`@param`/`@return`の形のdocstringは、そのコードを直すステップでGoogle形式に直す。
 
 ---
 ## 出勤状態の判定
