@@ -61,14 +61,20 @@ flowchart LR
 | --- | --- |
 | `frontend/` | Discord Bot。機能ごとにCogとして分割 |
 | `frontend/main.py` | Botの起動処理とCogの登録 |
-| `frontend/timer.py` | タイマー機能 |
-| `frontend/register_cog.py` | ユーザー登録機能 |
-| `frontend/time_stamp_cog.py` | 出勤記録機能 |
+| `frontend/cogs/` | コマンドの受付と返信(Cog) |
+| `frontend/cogs/timer_cog.py` | タイマー機能 |
+| `frontend/cogs/register_cog.py` | ユーザー登録機能 |
+| `frontend/cogs/time_stamp_cog.py` | 出勤記録機能 |
+| `frontend/cogs/help_cog.py` | コマンドの説明 |
+| `frontend/services/api_client.py` | APIの呼び出し |
 | `backend/` | APIサーバー |
-| `backend/from_discord.py` | APIのエンドポイント定義 |
-| `backend/crud.py` | DBの読み書き処理 |
-| `backend/models.py` | テーブル定義(SQLAlchemy) |
-| `backend/schemas.py` | リクエストの型定義(Pydantic) |
+| `backend/src/main.py` | APIの起動処理とrouterの登録 |
+| `backend/src/routers/` | APIのエンドポイント定義 |
+| `backend/src/services/` | 判定とルール |
+| `backend/src/crud/` | DBの読み書き処理 |
+| `backend/src/models.py` | テーブル定義(SQLAlchemy) |
+| `backend/src/schemas/` | リクエスト・レスポンスの型定義(Pydantic) |
+| `backend/tests/` | APIのテスト(pytest) |
 | `docs/` | 要件定義、フローチャートやシーケンス図などの設計資料 |
 
 ---

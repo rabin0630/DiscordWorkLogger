@@ -1,4 +1,4 @@
-from help_cog import Help
+from cogs.help_cog import Help
 
 
 # U-01

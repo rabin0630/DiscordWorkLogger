@@ -3,10 +3,10 @@ import discord
 
 
 from dotenv import load_dotenv
-from timer import Timer
-from time_stamp_cog import Time_Stamp
-from register_cog import Register
-from help_cog import Help
+from cogs.timer_cog import Timer
+from cogs.time_stamp_cog import Time_Stamp
+from cogs.register_cog import Register
+from cogs.help_cog import Help
 from discord.ext import commands
 # NOTE
 ## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url

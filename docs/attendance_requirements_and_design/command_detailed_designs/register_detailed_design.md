@@ -257,7 +257,9 @@ async def post(path: str, payload: dict) -> ApiResponse:
                     body = await response.json(content_type=None)
                 except ValueError:
                     body = {}
-                return ApiResponse(response.status, body or {})
+                if not isinstance(body, dict):
+                    body = {}
+                return ApiResponse(response.status, body)
     except (aiohttp.ClientError, TimeoutError) as e:
         raise ApiUnavailableError(str(e)) from e
 ```
@@ -309,7 +311,9 @@ def make_register_reply(response: ApiResponse, name: str) -> str:
     if response.status == 200:
         return random_choice_format_list_message(
             Register.REGISTER_COMPLETE_MESSAGES, name=response.body["user_name"])
-    messages = REGISTER_ERROR_MESSAGES.get(response.body.get("detail"))
+    detail = response.body.get("detail")
+    # 422の時はdetailがリストで返ってくるので、文字列の時だけ探す
+    messages = REGISTER_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
     if messages is None:
         return random_choice_format_list_message(API_UNAVAILABLE_MESSAGES)
     return random_choice_format_list_message(messages, name=name)
@@ -515,7 +519,11 @@ class Member(Base):
         retirement_date (date | None): 退職日。今回は使わない
     """
     __tablename__ = "Member_table"
-    __table_args__ = {"mysql_charset": "utf8mb4", "mysql_collate": "utf8mb4_0900_ai_ci"}
+    # テーブル全体の設定。create_allでテーブルを新しく作る時だけ使われる
+    __table_args__ = {
+        "mysql_charset": "utf8mb4",              # 文字コード。日本語や絵文字も保存できる
+        "mysql_collate": "utf8mb4_0900_ai_ci",   # 照合順序。大文字・小文字を区別しないので、UNIQUE制約がJunとjunを同じ名前とみなす
+    }
 
     user_id = Column(BigInteger, primary_key=True, autoincrement=False)
     user_name = Column(String(10), nullable=False, unique=True)
@@ -550,10 +558,11 @@ def verify_bot_key(x_bot_key: str | None = Header(default=None)) -> None:
         AppError: 401 invalid_bot_key。ヘッダーがない、値が違う、.envにBOT_API_KEYがない時
     """
     if not config.BOT_API_KEY or x_bot_key is None \
-            or not secrets.compare_digest(x_bot_key, config.BOT_API_KEY):
+            or not secrets.compare_digest(x_bot_key.encode(), config.BOT_API_KEY.encode()):
         raise AppError(401, "invalid_bot_key")
 ```
 - `.env`に`BOT_API_KEY`を書き忘れた時に、ヘッダーなしのリクエストが通ってしまわないよう、`BOT_API_KEY`が空なら必ず401にする。
+- `compare_digest`には`bytes`にして渡す。`str`のままだと、英字以外が入ったヘッダーで`TypeError`になり、500を返してしまうため。
 
 #### `main.py`
 ```python
@@ -682,7 +691,8 @@ classDiagram
 - 実行: `docker compose exec api python -m pytest tests`
 - `/register_member`を`TestClient`で呼び、返ってきた結果と、テスト用DBの`Member_table`の中身を確かめる。
 - `conftest.py`で`get_db`を`tests/dependencies.py`の`get_test_db`に差し替え、テストの前に`create_all`、各テストの前に`Member_table`を空にする。
-- リクエストのヘッダーには`config.BOT_API_KEY`、社長のIDには`config.OWNER_DISCORD_ID`を使う。
+- `conftest.py`で、`config.BOT_API_KEY`と`config.OWNER_DISCORD_ID`をテスト用の決まった値に差し替える(`monkeypatch`)。`.env`の値に関係なく、同じ結果になるようにするため。
+- `MYSQL_TEST_DATABASE`がない時や、`MYSQL_DATABASE`と同じ時は、テストを止める(本番のデータを消さないため)。
 
 | No | 確かめること | 起こしたエラー(やったこと) | 期待する結果 |
 | --- | --- | --- | --- |
