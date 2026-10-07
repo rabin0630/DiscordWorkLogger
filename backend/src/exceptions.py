@@ -1,3 +1,4 @@
+"""アプリ共通の例外(AppError)"""
 class AppError(Exception):
     """アプリのルールに合わない時に投げる例外
 

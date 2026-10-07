@@ -1,6 +1,5 @@
+"""名前のAPIのリクエスト・レスポンスの型"""
 from pydantic import BaseModel
-
-# 名前のAPIのリクエスト・レスポンスの型
 
 
 class RegisterMemberRequest(BaseModel):

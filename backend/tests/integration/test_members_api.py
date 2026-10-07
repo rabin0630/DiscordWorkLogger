@@ -1,3 +1,4 @@
+"""/register_memberの結合テスト"""
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -5,8 +6,6 @@ from sqlalchemy.orm import Session
 from src.models import Member
 from src.services.member_service import today_jst
 from tests.conftest import TEST_OWNER_DISCORD_ID
-
-# /register_memberのテスト
 
 EMPLOYEE_ID = 100000000000000001
 OTHER_EMPLOYEE_ID = 100000000000000002

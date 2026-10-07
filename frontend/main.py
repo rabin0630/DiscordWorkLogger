@@ -1,3 +1,4 @@
+"""Botを起動し、各Cogを読み込んで、コマンドをサーバーに反映する"""
 import os
 import discord
 

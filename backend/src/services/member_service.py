@@ -1,3 +1,4 @@
+"""メンバー登録のルール(名前のチェック、社長かどうかの判定)と、登録の処理"""
 import re
 from datetime import date, datetime
 
@@ -8,8 +9,6 @@ from src import config
 from src.crud import members
 from src.exceptions import AppError
 from src.models import Member
-
-# 名前のチェックと、社長かどうかの判定
 
 NAME_PATTERN = re.compile(r"[A-Za-z]+")
 NAME_MAX_LENGTH = 10

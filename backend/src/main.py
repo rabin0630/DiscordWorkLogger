@@ -1,3 +1,4 @@
+"""FastAPIのアプリを作り、ルーターと例外ハンドラーを登録する"""
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 

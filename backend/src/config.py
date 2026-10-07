@@ -1,3 +1,4 @@
+"""APIの設定値(.envから読んだ値と日本時間)をまとめる"""
 import os
 from datetime import timedelta, timezone
 

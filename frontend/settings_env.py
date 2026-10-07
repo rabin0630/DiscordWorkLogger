@@ -1,3 +1,4 @@
+"""Botの設定値(.envから読んだ値と、Discordの初期設定)をまとめる"""
 import os
 import discord
 from dotenv import load_dotenv

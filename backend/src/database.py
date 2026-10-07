@@ -1,3 +1,4 @@
+"""DBの接続(エンジンとセッション)と、テーブル定義の土台(Base)を作る"""
 from sqlalchemy import create_engine
 from sqlalchemy.engine import URL
 from sqlalchemy.orm import declarative_base, sessionmaker

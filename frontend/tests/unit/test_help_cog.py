@@ -1,3 +1,4 @@
+"""/helpのCogの単体テスト"""
 from cogs.help_cog import Help
 
 

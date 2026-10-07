@@ -1,11 +1,10 @@
+"""名前のAPIのエンドポイント"""
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 
 from src.dependencies import get_db, verify_bot_key
 from src.schemas.members import RegisterMemberRequest, RegisterMemberResponse
 from src.services import member_service
-
-# 名前のAPI
 
 router = APIRouter(dependencies=[Depends(verify_bot_key)])
 

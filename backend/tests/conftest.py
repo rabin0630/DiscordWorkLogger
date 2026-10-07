@@ -1,3 +1,4 @@
+"""テストで共通に使うもの(fixtureとテスト用の値)"""
 from collections.abc import Iterator
 
 import pytest
@@ -10,8 +11,6 @@ from src.dependencies import get_db
 from src.main import app
 from src.models import Member
 from tests.dependencies import TestSessionLocal, get_test_db, test_engine
-
-# テストで共通に使うもの
 
 TEST_BOT_API_KEY = "test-bot-api-key"
 TEST_OWNER_DISCORD_ID = 900000000000000000

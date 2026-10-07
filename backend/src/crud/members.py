@@ -1,11 +1,10 @@
+"""メンバーの読み書き。見つからなければNoneを返し、例外は投げない。コミットもしない"""
 from datetime import date
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from src.models import Member
-
-# メンバーの読み書き。見つからなければNoneを返し、例外は投げない。コミットもしない
 
 
 def get_member_by_id(db: Session, user_id: int) -> Member | None:

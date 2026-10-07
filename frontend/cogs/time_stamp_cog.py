@@ -1,3 +1,4 @@
+"""/start_workコマンド(出勤の記録)のCog"""
 from settings_env import API_URL
 from utils import random_choice_format_list_message
 import datetime

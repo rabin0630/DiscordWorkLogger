@@ -1,4 +1,4 @@
-# utils.py
+"""Botで共通に使う関数とメッセージ"""
 import random
 
 def random_choice_format_list_message(list_message: list[str], **kwargs) -> str:

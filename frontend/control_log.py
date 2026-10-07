@@ -1,3 +1,4 @@
+"""ログを新しい順にファイルへ書き、決まった行数を超えたら古い行を消すFileHandler"""
 import logging
 import os
 

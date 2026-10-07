@@ -296,6 +296,7 @@ def func(arg1, arg2):
 - 概要は1行で書く。詳細説明、`Examples`、`Note`は、必要な時だけ書く。
 - クラス(`dataclass`も含む)は、クラスのdocstringの`Attributes:`に、各属性を`名前 (型): 説明`の形で書く。
 - 今あるコードの`@param`/`@return`の形のdocstringは、そのコードを直すステップでGoogle形式に直す。
+- ファイル(モジュール)の説明は、ファイルのいちばん上(importより前)に1行のdocstringで書く(例: `"""APIの設定値(.envから読んだ値と日本時間)をまとめる"""`)。中身が空の`__init__.py`には書かない。
 
 ---
 ## 出勤状態の判定

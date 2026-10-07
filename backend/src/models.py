@@ -1,8 +1,7 @@
+"""データベースのテーブル設計"""
 from sqlalchemy import BigInteger, Column, Date, String
 
 from src.database import Base
-
-# データベースのテーブル設計
 
 
 class Member(Base):

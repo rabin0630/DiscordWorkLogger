@@ -1,3 +1,4 @@
+"""FastAPIのDependsで使う共通の部品(DBのセッション、Botの合言葉の確認)"""
 import secrets
 from collections.abc import Iterator
 
@@ -7,8 +8,6 @@ from sqlalchemy.orm import Session
 from src import config
 from src.database import SessionLocal
 from src.exceptions import AppError
-
-# FastAPIのDependsで使う共通の部品
 
 
 def get_db() -> Iterator[Session]:

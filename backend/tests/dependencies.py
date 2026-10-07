@@ -1,3 +1,4 @@
+"""get_dbを、テスト用のデータベースにつなぐものに差し替える"""
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
@@ -5,8 +6,6 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from src import config
 from src.database import make_database_url
-
-# get_dbを、テスト用のデータベースにつなぐものに差し替える
 
 test_engine = create_engine(make_database_url(config.MYSQL_TEST_DATABASE), pool_pre_ping=True)
 TestSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=test_engine)

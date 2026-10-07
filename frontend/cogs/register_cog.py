@@ -1,3 +1,4 @@
+"""/registerと/mynameコマンド(名前の登録と確認)のCog"""
 import json
 
 import discord

@@ -1,3 +1,4 @@
+"""BotからAPIを呼ぶための通信の部品"""
 import logging
 from dataclasses import dataclass
 
