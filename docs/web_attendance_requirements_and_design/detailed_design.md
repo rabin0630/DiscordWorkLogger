@@ -24,13 +24,13 @@ flowchart LR
 ### API(`backend/src/`に追加)
 | ファイル | 内容 |
 | --- | --- |
-| `routers/auth.py` | `/auth/login`、`/auth/callback`、`/auth/logout`、`/me` |
-| `routers/web_attendance.py` | `/members`、`/attendance`(GET・POST・PUT・DELETE) |
-| `routers/edit_history.py` | `/edit_history` |
+| `routers/auth_routers.py` | `/auth/login`、`/auth/callback`、`/auth/logout`、`/me` |
+| `routers/web_attendance_routers.py` | `/members`、`/attendance`(GET・POST・PUT・DELETE) |
+| `routers/edit_history_routers.py` | `/edit_history` |
 | `services/session.py` | ログインのクッキーの作成と確認 |
 | `services/discord_oauth.py` | Discordとのやり取り(コードとトークンの交換、ユーザーIDの取得) |
 | `services/attendance_edit.py` | 記録の修正のチェックと、修正履歴の保存 |
-| `crud/edit_history.py` | 修正履歴の読み書き |
+| `crud/edit_history_crud.py` | 修正履歴の読み書き |
 
 - 丸めや時間の計算は、出退勤と同じ`services/time_rules.py`を使う。
 

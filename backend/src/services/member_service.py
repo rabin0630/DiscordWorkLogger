@@ -6,7 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from src import config
-from src.crud import members
+from src.crud import members_crud
 from src.exceptions import AppError
 from src.models import Member
 
@@ -90,18 +90,18 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
     if name_error is not None:
         raise AppError(400, name_error)
 
-    if members.get_member_by_id(db, user_id) is not None:
+    if members_crud.get_member_by_id(db, user_id) is not None:
         raise AppError(409, "already_registered")
-    if members.get_member_by_name(db, user_name) is not None:
+    if members_crud.get_member_by_name(db, user_name) is not None:
         raise AppError(409, "name_taken")
 
-    member = members.create_member(db, user_id, user_name, today_jst())
+    member = members_crud.create_member(db, user_id, user_name, today_jst())
     try:
         db.commit()
     except IntegrityError:
         # 同時に登録された時。もう一度確かめて、どちらのエラーかを決める
         db.rollback()
-        if members.get_member_by_id(db, user_id) is not None:
+        if members_crud.get_member_by_id(db, user_id) is not None:
             raise AppError(409, "already_registered")
         raise AppError(409, "name_taken")
     db.refresh(member)

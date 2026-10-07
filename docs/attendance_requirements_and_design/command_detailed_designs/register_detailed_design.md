@@ -60,9 +60,9 @@
 | `src/exceptions.py` | 追加 | `AppError` |
 | `src/models.py` | 追加 | `Member`(`Member_table`)。`attendance_records`は`/start_work`のステップで足す |
 | `src/schemas/members.py` | 追加 | `RegisterMemberRequest`、`RegisterMemberResponse` |
-| `src/routers/members.py` | 追加 | `POST /register_member` |
+| `src/routers/members_routers.py` | 追加 | `POST /register_member` |
 | `src/services/member_service.py` | 追加 | `is_owner`、`get_name_error`、`today_jst`、`register_member` |
-| `src/crud/members.py` | 追加 | `get_member_by_id`、`get_member_by_name`、`create_member` |
+| `src/crud/members_crud.py` | 追加 | `get_member_by_id`、`get_member_by_name`、`create_member` |
 | `crud.py`、`database.py`、`database_config.py`、`from_discord.py`、`models.py`、`schemas.py` | 削除 | `src/`に移すため |
 | `tests/__init__.py`、`tests/integration/__init__.py` | 追加 | テストのパッケージ化 |
 | `tests/conftest.py` | 追加 | `TestClient`、テストごとにテーブルを空にする処理 |
@@ -384,7 +384,7 @@ def make_register_reply(response: ApiResponse, name: str) -> str:
 - 3で`str.isalpha()`を使わないのは、ひらがなや漢字も`True`になるため。`re.match`と`$`を使わないのは、末尾の改行を通してしまうため。
 
 ### 各層の処理
-#### `routers/members.py`
+#### `routers/members_routers.py`
 ```python
 router = APIRouter(dependencies=[Depends(verify_bot_key)])
 
@@ -488,18 +488,18 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
     if name_error is not None:
         raise AppError(400, name_error)
 
-    if members.get_member_by_id(db, user_id) is not None:
+    if members_crud.get_member_by_id(db, user_id) is not None:
         raise AppError(409, "already_registered")
-    if members.get_member_by_name(db, user_name) is not None:
+    if members_crud.get_member_by_name(db, user_name) is not None:
         raise AppError(409, "name_taken")
 
-    member = members.create_member(db, user_id, user_name, today_jst())
+    member = members_crud.create_member(db, user_id, user_name, today_jst())
     try:
         db.commit()
     except IntegrityError:
         # 同時に登録された時。もう一度確かめて、どちらのエラーかを決める
         db.rollback()
-        if members.get_member_by_id(db, user_id) is not None:
+        if members_crud.get_member_by_id(db, user_id) is not None:
             raise AppError(409, "already_registered")
         raise AppError(409, "name_taken")
     db.refresh(member)
@@ -507,7 +507,7 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
 ```
 - `config.OWNER_DISCORD_ID`は、関数の中で毎回`config`から読む(テストで差し替えられるようにするため)。
 
-#### `crud/members.py`
+#### `crud/members_crud.py`
 | 関数 | 内容 |
 | --- | --- |
 | `get_member_by_id(db, user_id) -> Member \| None` | `user_id`で1件探す |
@@ -596,7 +596,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     yield
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(members.router)
+app.include_router(members_routers.router)
 
 @app.exception_handler(AppError)
 async def app_error_handler(request: Request, exc: AppError) -> JSONResponse:
@@ -662,7 +662,7 @@ classDiagram
     api_client ..> ApiUnavailableError
     api_client ..> InvalidBotKeyError
 
-    class routers_members {
+    class members_routers {
         <<module>>
         register_member(request, db)
     }
@@ -673,7 +673,7 @@ classDiagram
         today_jst() date
         register_member(db, user_id, user_name) Member
     }
-    class crud_members {
+    class members_crud {
         <<module>>
         get_member_by_id(db, user_id)
         get_member_by_name(db, user_name)
@@ -683,8 +683,8 @@ classDiagram
         status_code: int
         detail: str
     }
-    routers_members ..> member_service
-    member_service ..> crud_members
+    members_routers ..> member_service
+    member_service ..> members_crud
     member_service ..> AppError
 ```
 
