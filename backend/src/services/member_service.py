@@ -1,4 +1,4 @@
-"""メンバー登録のルール(名前のチェック、社長かどうかの判定)と、登録の処理"""
+"""メンバーのルール(名前のチェック、社長かどうかの判定)と、登録・名前の変更の処理"""
 import re
 from datetime import date, datetime
 
@@ -62,6 +62,32 @@ def today_jst() -> date:
     return datetime.now(config.JST).date()
 
 
+def get_registered_member(db: Session, user_id: int) -> Member:
+    """登録している従業員を返す。社長か未登録ならAppErrorを投げる
+
+    従業員専用のAPIは、どれも最初にこの関数を呼ぶ(/register_memberは除く)。
+
+    Args:
+        db (Session): DBのセッション
+        user_id (int): DiscordのユーザーID
+
+    Returns:
+        Member: 見つかったメンバー
+
+    Raises:
+        AppError: 使えない時。detailは次のどれか
+            - employee_only(403): 社長
+            - not_registered(404): 登録していない
+    """
+    if is_owner(user_id):
+        raise AppError(403, "employee_only")
+
+    member = members_crud.get_member_by_id(db, user_id)
+    if member is None:
+        raise AppError(404, "not_registered")
+    return member
+
+
 def register_member(db: Session, user_id: int, user_name: str) -> Member:
     """メンバーを登録する
 
@@ -106,3 +132,51 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
         raise AppError(409, "name_taken")
     db.refresh(member)
     return member
+
+
+def rename_member(db: Session, user_id: int, user_name: str) -> tuple[str, Member]:
+    """登録名を変更する
+
+    「確認する順番」の表のとおりに確かめてから名前を書き換え、コミットする。
+    同時に同じ名前に変えられてUNIQUE制約に引っかかった時は、ロールバックしてname_takenにする。
+
+    Args:
+        db (Session): DBのセッション
+        user_id (int): 名前を変える人のDiscordのユーザーID
+        user_name (str): 変更後の名前
+
+    Returns:
+        tuple[str, Member]: 変更前の名前と、変更した後のメンバー
+
+    Raises:
+        AppError: 変更できない時。detailは次のどれか
+            - employee_only(403): 社長
+            - not_registered(404): 登録していない
+            - name_empty、name_not_alpha、name_too_long(400): 名前のルールに合わない
+            - same_name(409): 今と完全に同じ名前
+            - name_taken(409): 自分以外の人が同じ名前を使っている(大文字・小文字を区別しない)
+    """
+    member = get_registered_member(db, user_id)
+
+    name_error = get_name_error(user_name)
+    if name_error is not None:
+        raise AppError(400, name_error)
+
+    if user_name == member.user_name:
+        raise AppError(409, "same_name")
+
+    same_name_member = members_crud.get_member_by_name(db, user_name)
+    # 大文字・小文字だけを変える時は自分が見つかるので、自分以外の時だけエラーにする
+    if same_name_member is not None and same_name_member.user_id != user_id:
+        raise AppError(409, "name_taken")
+
+    old_name = member.user_name
+    members_crud.update_member_name(member, user_name)
+    try:
+        db.commit()
+    except IntegrityError:
+        # 同時に他の人が同じ名前に変えた・登録した時
+        db.rollback()
+        raise AppError(409, "name_taken")
+    db.refresh(member)
+    return old_name, member

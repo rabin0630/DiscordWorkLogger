@@ -51,3 +51,17 @@ def create_member(db: Session, user_id: int, user_name: str, created_date: date)
     member = Member(user_id=user_id, user_name=user_name, created_date=created_date)
     db.add(member)
     return member
+
+
+def update_member_name(member: Member, user_name: str) -> Member:
+    """メンバーの名前を書き換える。コミットしない
+
+    Args:
+        member (Member): 名前を変えるメンバー。DBのセッションから取ったもの
+        user_name (str): 変更後の名前
+
+    Returns:
+        Member: 名前を書き換えたメンバー
+    """
+    member.user_name = user_name
+    return member
