@@ -7,3 +7,4 @@ timer_bot.log
 .venv
 .vscode
 __pycache__/
+.claude/

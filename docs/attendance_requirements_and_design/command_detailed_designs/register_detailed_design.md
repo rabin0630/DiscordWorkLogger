@@ -61,7 +61,7 @@
 | `src/models.py` | 追加 | `Member`(`Member_table`)。`attendance_records`は`/start_work`のステップで足す |
 | `src/schemas/members.py` | 追加 | `RegisterMemberRequest`、`RegisterMemberResponse` |
 | `src/routers/members.py` | 追加 | `POST /register_member` |
-| `src/services/member_service.py` | 追加 | `is_owner`、`validate_name`、`today_jst`、`register_member` |
+| `src/services/member_service.py` | 追加 | `is_owner`、`get_name_error`、`today_jst`、`register_member` |
 | `src/crud/members.py` | 追加 | `get_member_by_id`、`get_member_by_name`、`create_member` |
 | `crud.py`、`database.py`、`database_config.py`、`from_discord.py`、`models.py`、`schemas.py` | 削除 | `src/`に移すため |
 | `tests/__init__.py`、`tests/integration/__init__.py` | 追加 | テストのパッケージ化 |
@@ -426,26 +426,28 @@ def is_owner(user_id: int) -> bool:
     """
     return config.OWNER_DISCORD_ID is not None and user_id == config.OWNER_DISCORD_ID
 
-def validate_name(name: str) -> None:
-    """名前のルール(空は不可、英字のみ、10文字まで)を確かめる
+def get_name_error(name: str) -> str | None:
+    """名前のルール(空は不可、英字のみ、10文字まで)を確かめ、合わなければエラーの種類を返す
 
-    上から順に確かめ、最初に当てはまったエラーを投げる。/renameでも使う。
+    上から順に確かめ、最初に当てはまったエラーの種類を返す。/renameでも使う。
+    例外は投げない。AppErrorにするのは呼び出し側。
 
     Args:
         name (str): 確かめる名前
 
-    Raises:
-        AppError: ルールに合わない時(400)。detailは次のどれか
+    Returns:
+        str | None: ルールに合っていればNone。合わなければ次のどれか
             - name_empty: 前後の空白を除いて0文字
             - name_not_alpha: 英字以外が入っている
             - name_too_long: 11文字以上
     """
     if not name.strip():
-        raise AppError(400, "name_empty")
+        return "name_empty"
     if not NAME_PATTERN.fullmatch(name):
-        raise AppError(400, "name_not_alpha")
+        return "name_not_alpha"
     if len(name) > NAME_MAX_LENGTH:
-        raise AppError(400, "name_too_long")
+        return "name_too_long"
+    return None
 
 def today_jst() -> date:
     """日本時間の今日の日付を返す
@@ -478,7 +480,11 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
     """
     if is_owner(user_id):
         raise AppError(403, "employee_only")
-    validate_name(user_name)
+
+    name_error = get_name_error(user_name)
+    if name_error is not None:
+        raise AppError(400, name_error)
+
     if members.get_member_by_id(db, user_id) is not None:
         raise AppError(409, "already_registered")
     if members.get_member_by_name(db, user_name) is not None:
@@ -653,7 +659,7 @@ classDiagram
     class member_service {
         <<module>>
         is_owner(user_id) bool
-        validate_name(name)
+        get_name_error(name) str | None
         today_jst() date
         register_member(db, user_id, user_name) Member
     }
