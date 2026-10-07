@@ -151,6 +151,7 @@ def make_register_reply(response: ApiResponse, name: str) -> str:
     if response.status == 200:
         return random_choice_format_list_message(
             Register.REGISTER_COMPLETE_MESSAGES, name=response.body["user_name"])
+    
     detail = response.body.get("detail")
     # 422の時はdetailがリストで返ってくるので、文字列の時だけ探す
     messages = REGISTER_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
