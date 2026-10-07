@@ -1,3 +1,4 @@
+"""/helpコマンド(コマンドの説明を表示する)のCog"""
 import discord
 from discord import app_commands
 from discord.ext import commands

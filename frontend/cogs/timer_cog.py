@@ -1,3 +1,4 @@
+"""タイマーのコマンド(/timer、/pomodorotimerなど)のCog"""
 import time
 import asyncio
 from settings_env import env_mode

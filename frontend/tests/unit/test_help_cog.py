@@ -1,4 +1,5 @@
-from help_cog import Help
+"""/helpのCogの単体テスト"""
+from cogs.help_cog import Help
 
 
 # U-01
