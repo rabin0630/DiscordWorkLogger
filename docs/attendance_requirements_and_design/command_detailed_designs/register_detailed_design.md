@@ -566,8 +566,15 @@ def verify_bot_key(x_bot_key: str | None = Header(default=None)) -> None:
     Raises:
         AppError: 401 invalid_bot_key。ヘッダーがない、値が違う、.envにBOT_API_KEYがない時
     """
-    if not config.BOT_API_KEY or x_bot_key is None \
-            or not secrets.compare_digest(x_bot_key.encode(), config.BOT_API_KEY.encode()):
+    # .envにBOT_API_KEYがない時は、ヘッダーなしのリクエストを通さないよう、必ず断る
+    if not config.BOT_API_KEY:
+        raise AppError(401, "invalid_bot_key")
+
+    if x_bot_key is None:
+        raise AppError(401, "invalid_bot_key")
+
+    # 英字以外が入っていてもTypeErrorにならないよう、bytesにして比べる
+    if not secrets.compare_digest(x_bot_key.encode(), config.BOT_API_KEY.encode()):
         raise AppError(401, "invalid_bot_key")
 ```
 - `.env`に`BOT_API_KEY`を書き忘れた時に、ヘッダーなしのリクエストが通ってしまわないよう、`BOT_API_KEY`が空なら必ず401にする。
