@@ -50,12 +50,12 @@ DiscordWorkLogger/
 │ ├ src/
 │ │ ├ crud/                     データアクセス層
 │ │ │ ├ __init__.py
-│ │ │ ├ attendance.py           ### 出退勤の読み書き
-│ │ │ └ members.py              ### メンバーの読み書き
+│ │ │ ├ attendance_crud.py      ### 出退勤の読み書き
+│ │ │ └ members_crud.py         ### メンバーの読み書き
 │ │ ├ routers/                  プレゼンテーション層
 │ │ │ ├ __init__.py
-│ │ │ ├ attendance.py           ## 出退勤のAPI
-│ │ │ └ members.py              ## 名前のAPI
+│ │ │ ├ attendance_routers.py   ## 出退勤のAPI
+│ │ │ └ members_routers.py      ## 名前のAPI
 │ │ ├ schemas/                  API送受信の型
 │ │ │ ├ __init__.py
 │ │ │ ├ attendance.py           ## 出退勤の型
@@ -145,12 +145,12 @@ Botも、バックエンドと同じく役割ごとに分ける。判定やル�
 | `models.py` | テーブル定義 |
 | `schemas/members.py` | 名前のAPIのリクエスト・レスポンスの型 |
 | `schemas/attendance.py` | 出退勤のAPIのリクエスト・レスポンスの型 |
-| `routers/members.py` | `/register_member`、`/get_name`、`/rename_member` |
-| `routers/attendance.py` | `/start_work`、`/stop_work`、`/work_status`、`/all_work_status` |
+| `routers/members_routers.py` | `/register_member`、`/get_name`、`/rename_member` |
+| `routers/attendance_routers.py` | `/start_work`、`/stop_work`、`/work_status`、`/all_work_status` |
 | `services/time_rules.py` | 30分単位の丸めと、時間の計算 |
 | `services/member_service.py` | 名前のチェック、社長かどうかの判定、登録しているメンバーの取得(`get_registered_member`) |
 | `services/attendance_service.py` | 出勤・退勤・出勤状況の処理(ロック、出勤中かどうかの確認、5時間以上かどうか、退勤時刻を出勤時刻にそろえる処理) |
-| `crud/members.py`、`crud/attendance.py` | DBの読み書き |
+| `crud/members_crud.py`、`crud/attendance_crud.py` | DBの読み書き |
 
 - 最初から入れておくデータはないので、データを入れる仕組み(seeding)は作らない。
 

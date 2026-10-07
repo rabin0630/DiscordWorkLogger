@@ -22,3 +22,27 @@ class RegisterMemberResponse(BaseModel):
         user_name (str): 登録した名前
     """
     user_name: str
+
+
+class RenameMemberRequest(BaseModel):
+    """/rename_memberのリクエスト
+
+    user_nameには長さなどの制限を付けない(付けると422になり、エラーコードを返せないため)。
+
+    Attributes:
+        user_id (int): 名前を変える人のDiscordのユーザーID
+        user_name (str): 変更後の名前。入力したまま送られてくる
+    """
+    user_id: int
+    user_name: str
+
+
+class RenameMemberResponse(BaseModel):
+    """/rename_memberのレスポンス
+
+    Attributes:
+        old_name (str): 変更前の名前
+        new_name (str): 変更後の名前
+    """
+    old_name: str
+    new_name: str

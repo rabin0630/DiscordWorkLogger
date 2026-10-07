@@ -1,4 +1,4 @@
-"""/registerと/mynameコマンド(名前の登録と確認)のCog"""
+"""/register、/myname、/renameコマンド(名前の登録、確認、変更)のCog"""
 import json
 
 import discord
@@ -9,7 +9,12 @@ from discord.ext import commands
 from services import api_client
 from services.api_client import ApiResponse
 from settings_env import env_mode, API_URL
-from utils import random_choice_format_list_message, EMPLOYEE_ONLY_MESSAGES, API_UNAVAILABLE_MESSAGES
+from utils import (
+    random_choice_format_list_message,
+    EMPLOYEE_ONLY_MESSAGES,
+    NOT_REGISTERED_MESSAGES,
+    API_UNAVAILABLE_MESSAGES,
+)
 
 
 class Register(commands.Cog):
@@ -60,6 +65,18 @@ class Register(commands.Cog):
         "ごめんなのだ！「{name}」は他の仲間が使っているみたいなのだ！",
     ]
 
+    RENAME_COMPLETE_MESSAGES: list[str] = [
+        "名前を{old_name}から{new_name}に変えたのだ！",
+        "{old_name}改め、{new_name}なのだ！これからもよろしくなのだ！",
+        "名前の変更が完了したのだ！今日から{new_name}なのだ！",
+    ]
+
+    SAME_NAME_MESSAGES: list[str] = [
+        "今と同じ名前なのだ！",
+        "それは今の名前と同じなのだ！変える必要はないのだ！",
+        "もうその名前で登録されているのだ！",
+    ]
+
     NO_DATA_AND_REGISTER_NAME_MESSAGES: list[str] = [
         "まだ名前が登録されていないのだ！先に名前を登録するのだ！",
         "おっと！お前のデータがまだないのだ。まずは登録からよろしくなのだ！",
@@ -99,6 +116,26 @@ class Register(commands.Cog):
             return
         await interaction.followup.send(make_register_reply(response, name))
 
+    # 名前を変更する
+    @app_commands.command(name=f"rename{index}", description="名前を変更します")
+    @app_commands.describe(name="英字のみ、10文字まで")
+    @app_commands.guild_only()
+    async def rename_command(self, interaction: discord.Interaction, name: str) -> None:
+        """登録名を変更し、結果をサーバーの全員に見える形で返信する
+
+        Args:
+            interaction (discord.Interaction): コマンドのinteraction。interaction.user.idで変更する人を決める
+            name (str): 変更後の名前。ルールの確認はAPIで行うので、そのまま送る
+        """
+        await interaction.response.defer()
+        payload = {"user_id": interaction.user.id, "user_name": name}
+        try:
+            response = await api_client.post("/rename_member", payload)
+        except api_client.ApiUnavailableError:
+            await interaction.followup.send(random_choice_format_list_message(API_UNAVAILABLE_MESSAGES))
+            return
+        await interaction.followup.send(make_rename_reply(response, name))
+
     # 名前を返す
     @app_commands.command(name=f"myname{index}", description="名前を確認します")
     async def myname(self,interaction:discord.Interaction):
@@ -137,6 +174,18 @@ REGISTER_ERROR_MESSAGES: dict[str, list[str]] = {
 }
 
 
+# /rename_memberのdetailと、返すメッセージのリスト
+RENAME_ERROR_MESSAGES: dict[str, list[str]] = {
+    "employee_only": EMPLOYEE_ONLY_MESSAGES,
+    "not_registered": NOT_REGISTERED_MESSAGES,
+    "name_empty": Register.NAME_EMPTY_MESSAGES,
+    "name_not_alpha": Register.NAME_NOT_ALPHA_MESSAGES,
+    "name_too_long": Register.NAME_TOO_LONG_MESSAGES,
+    "same_name": Register.SAME_NAME_MESSAGES,
+    "name_taken": Register.NAME_TAKEN_MESSAGES,
+}
+
+
 def make_register_reply(response: ApiResponse, name: str) -> str:
     """/register_memberの結果から、返信の文を作る
 
@@ -156,6 +205,31 @@ def make_register_reply(response: ApiResponse, name: str) -> str:
     detail = response.body.get("detail")
     # 422の時はdetailがリストで返ってくるので、文字列の時だけ探す
     messages = REGISTER_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
+    if messages is None:
+        return random_choice_format_list_message(API_UNAVAILABLE_MESSAGES)
+    return random_choice_format_list_message(messages, name=name)
+
+
+def make_rename_reply(response: ApiResponse, name: str) -> str:
+    """/rename_memberの結果から、返信の文を作る
+
+    Discordを使わないので、単体テストできる。
+
+    Args:
+        response (ApiResponse): /rename_memberの結果
+        name (str): 従業員が入力した名前。name_takenのメッセージに入れる
+
+    Returns:
+        str: ランダムに選んだ返信の文。表にないdetailの時は、通信できなかった時の文
+    """
+    if response.status == 200:
+        return random_choice_format_list_message(
+            Register.RENAME_COMPLETE_MESSAGES,
+            old_name=response.body["old_name"], new_name=response.body["new_name"])
+
+    detail = response.body.get("detail")
+    # 422の時はdetailがリストで返ってくるので、文字列の時だけ探す
+    messages = RENAME_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
     if messages is None:
         return random_choice_format_list_message(API_UNAVAILABLE_MESSAGES)
     return random_choice_format_list_message(messages, name=name)

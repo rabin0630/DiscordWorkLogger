@@ -36,6 +36,13 @@ EMPLOYEE_ONLY_MESSAGES: list[str] = [
     "社長はこのコマンドを使えないのだ！従業員専用なのだ！",
 ]
 
+## 登録していない人が、登録している人専用のコマンドを使った時(detail: not_registered)
+NOT_REGISTERED_MESSAGES: list[str] = [
+    "まだ名前が登録されていないのだ！先に/registerで登録するのだ！",
+    "ボクの記録にお前の名前がないのだ！先に/registerで登録するのだ！",
+    "名前が登録されていないのだ…まずは/registerからよろしくなのだ！",
+]
+
 ## APIと通信できなかった時(通信エラー、タイムアウト、500番台、想定していないエラー)
 API_UNAVAILABLE_MESSAGES: list[str] = [
     "サーバーとつながらなかったのだ…少し待ってからもう一度試してほしいのだ！",

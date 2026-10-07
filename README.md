@@ -158,6 +158,7 @@ BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続�
 | コマンド | 内容 |
 | `/register {name}` | 名前を登録する |
 | `/myname` | 登録した名前を確認する |
+| `/rename {name}` | 登録した名前を変更する |
 | `/start_work` | 出勤を記録する |
 |　`/stop_work`　| 退勤を記録する　|
 
@@ -166,6 +167,7 @@ BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続�
 | --- | --- | --- |
 | POST | `/register_member` | メンバーを登録する。IDか名前が重複している場合は409を返す |
 | POST | `/get_name` | ユーザーIDから登録名を取得する。未登録の場合は409を返す |
+| POST | `/rename_member` | 登録名を変更する。今と同じ名前、他の人と同じ名前の場合は409を返す |
 | POST | `/create_clock_in` | 出勤時刻を記録する |
 | POST | `/update_clock_out` | 退勤時刻を記録する |
 
