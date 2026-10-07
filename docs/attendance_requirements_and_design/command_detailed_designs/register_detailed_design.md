@@ -424,7 +424,10 @@ def is_owner(user_id: int) -> bool:
     Returns:
         bool: OWNER_DISCORD_IDと同じならTrue。.envにOWNER_DISCORD_IDがなければ、いつもFalse
     """
-    return config.OWNER_DISCORD_ID is not None and user_id == config.OWNER_DISCORD_ID
+    if user_id == config.OWNER_DISCORD_ID:
+        return True
+    else:
+        return False
 
 def get_name_error(name: str) -> str | None:
     """名前のルール(空は不可、英字のみ、10文字まで)を確かめ、合わなければエラーの種類を返す
