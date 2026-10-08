@@ -1,5 +1,6 @@
 """Botで共通に使う関数とメッセージ"""
 import random
+from datetime import datetime
 
 def random_choice_format_list_message(list_message: list[str], **kwargs) -> str:
     """リストからメッセージをランダムに1つ選び、{name}などを埋めて返す
@@ -27,6 +28,23 @@ def random_choice_format_list_message(list_message: list[str], **kwargs) -> str:
     return chose_message.format(**kwargs)
 
 
+def format_time(dt: datetime) -> str:
+    """時刻を「時:分」の文字列にする。時は0埋めしない
+
+    Args:
+        dt (datetime): 表示する時刻
+
+    Returns:
+        str: 「9:30」「18:00」のような文字列
+
+    Examples:
+
+        >>> format_time(datetime(2026, 10, 8, 9, 30))
+        '9:30'
+    """
+    return f"{dt.hour}:{dt.minute:02d}"
+
+
 
 # どのコマンドでも使うメッセージ
 ## 社長が従業員専用のコマンドを使った時(detail: employee_only)
@@ -48,4 +66,11 @@ API_UNAVAILABLE_MESSAGES: list[str] = [
     "サーバーとつながらなかったのだ…少し待ってからもう一度試してほしいのだ！",
     "うまくサーバーに届かなかったのだ…少し待ってからもう一度お願いするのだ！",
     "サーバーが返事をしてくれないのだ…時間をおいてもう一度試すのだ！",
+]
+
+## /start_work、/stop_workでAPIと通信できなかった時。打刻できていないことも伝える
+STAMP_API_UNAVAILABLE_MESSAGES: list[str] = [
+    "サーバーとつながらなかったのだ…打刻はできていないのだ！少し待ってからもう一度試してほしいのだ！",
+    "うまくサーバーに届かなかったのだ…打刻はできていないのだ！少し待ってからもう一度お願いするのだ！",
+    "サーバーが返事をしてくれないのだ…打刻はできていないのだ！時間をおいてもう一度試すのだ！",
 ]

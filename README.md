@@ -168,7 +168,7 @@ BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続�
 | POST | `/register_member` | メンバーを登録する。IDか名前が重複している場合は409を返す |
 | POST | `/get_name` | ユーザーIDから登録名を取得する。未登録の場合は409を返す |
 | POST | `/rename_member` | 登録名を変更する。今と同じ名前、他の人と同じ名前の場合は409を返す |
-| POST | `/create_clock_in` | 出勤時刻を記録する |
+| POST | `/start_work` | 出勤時刻を記録する。未登録の場合は404、すでに出勤中の場合は409を返す |
 | POST | `/update_clock_out` | 退勤時刻を記録する |
 
 # DB設計
@@ -176,7 +176,6 @@ BotからAPIへはDockerのネットワーク経由(`http://api:8000`)で接続�
 | --- | --- |
 | `Member_table` | メンバーのユーザーID、名前、登録日、退職日 |
 | `attendance_records` | 1回の出退勤。1行で1回分の出勤時刻と退勤時刻を管理する |
-| `monthly_summary` | 1ヶ月分の総労働時間と出勤回数(集計処理は未実装) |
 
 # 設計資料
 * [start_workのフローチャート](./docs/flowchart.md)
