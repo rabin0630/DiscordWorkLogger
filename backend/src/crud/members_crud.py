@@ -7,17 +7,22 @@ from sqlalchemy.orm import Session
 from src.models import Member
 
 
-def get_member_by_id(db: Session, user_id: int) -> Member | None:
+def get_member_by_id(user_id: int, db: Session, for_update: bool = False) -> Member | None:
     """user_idでメンバーを1件探す
 
     Args:
-        db (Session): DBのセッション
         user_id (int): DiscordのユーザーID
+        db (Session): DBのセッション
+        for_update (:obj:`bool`, optional): Trueなら、SELECT … FOR UPDATEで探し、
+            見つかった行をコミットかロールバックまでロックする
 
     Returns:
         Member | None: 見つかったメンバー。いなければNone
     """
-    return db.query(Member).filter(Member.user_id == user_id).first()
+    query = db.query(Member).filter(Member.user_id == user_id)
+    if for_update:
+        query = query.with_for_update()
+    return query.first()
 
 
 def get_member_by_name(db: Session, user_name: str) -> Member | None:

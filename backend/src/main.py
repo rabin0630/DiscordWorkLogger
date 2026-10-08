@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from src import models  # noqa: F401  create_allの前にテーブル定義を読み込む
 from src.database import Base, engine
 from src.exceptions import AppError
-from src.routers import members_routers
+from src.routers import attendance_routers, members_routers
 
 
 @asynccontextmanager
@@ -27,6 +27,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 app = FastAPI(lifespan=lifespan)
 app.include_router(members_routers.router)
+app.include_router(attendance_routers.router)
 
 
 @app.exception_handler(AppError)

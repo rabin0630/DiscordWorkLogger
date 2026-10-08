@@ -1,5 +1,5 @@
 """データベースのテーブル設計"""
-from sqlalchemy import BigInteger, Column, Date, String
+from sqlalchemy import BigInteger, Column, Date, DateTime, ForeignKey, Index, Integer, String
 
 from src.database import Base
 
@@ -24,3 +24,34 @@ class Member(Base):
     user_name = Column(String(10), nullable=False, unique=True)
     created_date = Column(Date, nullable=False)
     retirement_date = Column(Date, nullable=True)
+
+
+class AttendanceRecord(Base):
+    """attendance_records。1回の出退勤を1行で管理する
+
+    Attributes:
+        index (int): 主キー。自動採番
+        member_id (int): Member_table.user_idの外部キー
+        date (date): 出勤日。丸めた後の出勤時刻の日付
+        start_time (datetime): 出勤時刻(丸めた後、日本時間)
+        end_time (datetime | None): 退勤時刻(丸めた後、日本時間)。出勤中はNone
+        raw_start_time (datetime | None): 打刻した本当の出勤時刻。社長がWebで追加した記録はNone
+        raw_end_time (datetime | None): 打刻した本当の退勤時刻。出勤中と、社長がWebで退勤時間を入れた記録はNone
+    """
+    __tablename__ = "attendance_records"
+    __table_args__ = (
+        # 出勤中の行の検索、月の一覧、重なりの確認に使う
+        Index("ix_attendance_records_member_id_start_time", "member_id", "start_time"),
+        {
+            "mysql_charset": "utf8mb4",
+            "mysql_collate": "utf8mb4_0900_ai_ci",
+        },
+    )
+
+    index = Column(Integer, primary_key=True, autoincrement=True)
+    member_id = Column(BigInteger, ForeignKey("Member_table.user_id"), nullable=False)
+    date = Column(Date, nullable=False, index=True)
+    start_time = Column(DateTime, nullable=False)
+    end_time = Column(DateTime, nullable=True)
+    raw_start_time = Column(DateTime, nullable=True)
+    raw_end_time = Column(DateTime, nullable=True)

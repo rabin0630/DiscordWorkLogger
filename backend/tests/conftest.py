@@ -9,7 +9,7 @@ from src import config
 from src.database import Base
 from src.dependencies import get_db
 from src.main import app
-from src.models import Member
+from src.models import AttendanceRecord, Member
 from tests.dependencies import TestSessionLocal, get_test_db, test_engine
 
 TEST_BOT_API_KEY = "test-bot-api-key"
@@ -29,8 +29,12 @@ def create_tables() -> None:
 
 @pytest.fixture(autouse=True)
 def clear_tables() -> None:
-    """各テストの前に、Member_tableを空にする"""
+    """各テストの前に、attendance_recordsとMember_tableを空にする
+
+    attendance_recordsはMember_tableを外部キーで参照しているので、先に空にする。
+    """
     with TestSessionLocal() as db:
+        db.query(AttendanceRecord).delete()
         db.query(Member).delete()
         db.commit()
 

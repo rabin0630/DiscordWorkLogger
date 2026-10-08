@@ -62,14 +62,16 @@ def today_jst() -> date:
     return datetime.now(config.JST).date()
 
 
-def get_registered_member(db: Session, user_id: int) -> Member:
+def get_registered_member(user_id: int, db: Session, for_update: bool = False) -> Member:
     """登録している従業員を返す。社長か未登録ならAppErrorを投げる
 
     従業員専用のAPIは、どれも最初にこの関数を呼ぶ(/register_memberは除く)。
 
     Args:
-        db (Session): DBのセッション
         user_id (int): DiscordのユーザーID
+        db (Session): DBのセッション
+        for_update (:obj:`bool`, optional): Trueなら、見つかった行をコミットかロールバックまでロックする。
+            打刻の処理で使う
 
     Returns:
         Member: 見つかったメンバー
@@ -82,7 +84,7 @@ def get_registered_member(db: Session, user_id: int) -> Member:
     if is_owner(user_id):
         raise AppError(403, "employee_only")
 
-    member = members_crud.get_member_by_id(db, user_id)
+    member = members_crud.get_member_by_id(user_id, db, for_update=for_update)
     if member is None:
         raise AppError(404, "not_registered")
     return member
@@ -116,7 +118,7 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
     if name_error is not None:
         raise AppError(400, name_error)
 
-    if members_crud.get_member_by_id(db, user_id) is not None:
+    if members_crud.get_member_by_id(user_id, db) is not None:
         raise AppError(409, "already_registered")
     if members_crud.get_member_by_name(db, user_name) is not None:
         raise AppError(409, "name_taken")
@@ -127,7 +129,7 @@ def register_member(db: Session, user_id: int, user_name: str) -> Member:
     except IntegrityError:
         # 同時に登録された時。もう一度確かめて、どちらのエラーかを決める
         db.rollback()
-        if members_crud.get_member_by_id(db, user_id) is not None:
+        if members_crud.get_member_by_id(user_id, db) is not None:
             raise AppError(409, "already_registered")
         raise AppError(409, "name_taken")
     db.refresh(member)
@@ -156,7 +158,7 @@ def rename_member(db: Session, user_id: int, user_name: str) -> tuple[str, Membe
             - same_name(409): 今と完全に同じ名前
             - name_taken(409): 自分以外の人が同じ名前を使っている(大文字・小文字を区別しない)
     """
-    member = get_registered_member(db, user_id)
+    member = get_registered_member(user_id, db)
 
     name_error = get_name_error(user_name)
     if name_error is not None:
