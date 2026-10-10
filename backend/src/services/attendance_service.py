@@ -84,3 +84,33 @@ def stop_work(user_id: int, command_at: datetime, db: Session) -> tuple[Member, 
     db.commit()
     db.refresh(record)
     return member, record, minutes_between(record.start_time, record.end_time)
+
+
+def work_status(user_id: int, command_at: datetime, db: Session) -> tuple[AttendanceRecord | None, int | None]:
+    """出勤状況を確認する
+
+    「確認する順番」の表のとおりに確かめてから、出勤中の行と働いている時間を返す。
+    DBを書き換えないので、ロックもコミットもしない。
+
+    Args:
+        user_id (int): 出勤状況を確認する人のDiscordのユーザーID
+        command_at (datetime): コマンドした時刻。タイムゾーン付き
+        db (Session): DBのセッション
+
+    Returns:
+        tuple[AttendanceRecord | None, int | None]: 出勤中の行と、働いている時間(分)。
+            働いている時間は、コマンドした時刻を切り捨てて、丸めた出勤時刻から計算する。
+            勤務外なら(None, None)
+
+    Raises:
+        AppError: 確認できない時。detailは次のどれか
+            - employee_only(403): 社長
+            - not_registered(404): 登録していない
+    """
+    get_registered_member(user_id, db)
+    now = to_jst(command_at)
+
+    working_record = attendance_crud.get_working_record(user_id, db)
+    if working_record is None:
+        return None, None
+    return working_record, minutes_between(working_record.start_time, floor_30(now))
