@@ -1,4 +1,4 @@
-"""/register_memberと/rename_memberの結合テスト"""
+"""/register_member、/rename_member、/get_nameの結合テスト"""
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -204,3 +204,70 @@ def test_rename_invalid_bot_key(client: TestClient, db: Session, bot_headers: di
     assert response.status_code == 401
     assert response.json() == {"detail": "invalid_bot_key"}
     assert [m.user_name for m in db.query(Member).all()] == ["Jun"]
+
+
+def get_name(client: TestClient, headers: dict[str, str], user_id: int):
+    """/get_nameを呼ぶ
+
+    Args:
+        client (TestClient): APIを呼ぶクライアント
+        headers (dict[str, str]): リクエストのヘッダー
+        user_id (int): 名前を確認する人のDiscordのユーザーID
+
+    Returns:
+        httpx.Response: APIのレスポンス
+    """
+    return client.post("/get_name", json={"user_id": user_id}, headers=headers)
+
+
+# T-34
+def test_get_name(client: TestClient, bot_headers: dict[str, str]):
+    # 他の人がいても、自分の登録名を確認できる
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    register(client, bot_headers, OTHER_EMPLOYEE_ID, "Ken")
+
+    response = get_name(client, bot_headers, EMPLOYEE_ID)
+
+    assert response.status_code == 200
+    assert response.json() == {"user_name": "Jun"}
+
+
+# T-35
+def test_get_name_after_rename(client: TestClient, bot_headers: dict[str, str]):
+    # 名前を変えた後は、新しい名前が返る
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    rename(client, bot_headers, EMPLOYEE_ID, "Ken")
+
+    response = get_name(client, bot_headers, EMPLOYEE_ID)
+
+    assert response.status_code == 200
+    assert response.json() == {"user_name": "Ken"}
+
+
+# T-36
+def test_owner_cannot_get_name(client: TestClient, bot_headers: dict[str, str]):
+    # 社長は確認できない
+    response = get_name(client, bot_headers, TEST_OWNER_DISCORD_ID)
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "employee_only"}
+
+
+# T-37
+def test_not_registered_cannot_get_name(client: TestClient, bot_headers: dict[str, str]):
+    # 登録していない人は確認できない
+    response = get_name(client, bot_headers, EMPLOYEE_ID)
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "not_registered"}
+
+
+# T-38
+def test_get_name_invalid_bot_key(client: TestClient, bot_headers: dict[str, str]):
+    # X-Bot-Keyが違うと使えない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+
+    response = get_name(client, {"X-Bot-Key": "wrong-key"}, EMPLOYEE_ID)
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "invalid_bot_key"}

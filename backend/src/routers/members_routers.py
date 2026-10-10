@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 
 from src.dependencies import get_db, verify_bot_key
 from src.schemas.members import (
+    GetNameRequest,
+    GetNameResponse,
     RegisterMemberRequest,
     RegisterMemberResponse,
     RenameMemberRequest,
@@ -54,3 +56,24 @@ def rename_member(request: RenameMemberRequest, db: Session = Depends(get_db)) -
     """
     old_name, member = member_service.rename_member(db, request.user_id, request.user_name)
     return RenameMemberResponse(old_name=old_name, new_name=member.user_name)
+
+
+@router.post("/get_name", response_model=GetNameResponse)
+def get_name(request: GetNameRequest, db: Session = Depends(get_db)) -> GetNameResponse:
+    """POST /get_name: 登録名を返す
+
+    Args:
+        request (GetNameRequest): 名前を確認する人のuser_id
+        db (Session): DBのセッション
+
+    Returns:
+        GetNameResponse: 登録名
+
+    Raises:
+        AppError: 確認できない時(member_service.get_registered_memberと同じ)
+
+    Note:
+        AppErrorは、main.pyの例外ハンドラーがエラーのレスポンスにする
+    """
+    member = member_service.get_registered_member(request.user_id, db)
+    return GetNameResponse(user_name=member.user_name)
