@@ -1,4 +1,4 @@
-"""/start_workの結合テスト"""
+"""/start_work、/stop_workの結合テスト"""
 from datetime import date, datetime
 
 import pytest
@@ -23,6 +23,21 @@ def start_work(client: TestClient, headers: dict[str, str], user_id: int, comman
         httpx.Response: APIのレスポンス
     """
     return client.post("/start_work", json={"user_id": user_id, "command_at": command_at}, headers=headers)
+
+
+def stop_work(client: TestClient, headers: dict[str, str], user_id: int, command_at: str):
+    """/stop_workを呼ぶ
+
+    Args:
+        client (TestClient): APIを呼ぶクライアント
+        headers (dict[str, str]): リクエストのヘッダー
+        user_id (int): 退勤する人のDiscordのユーザーID
+        command_at (str): コマンドした時刻。"2026-10-08T18:10:45+09:00"のような文字列
+
+    Returns:
+        httpx.Response: APIのレスポンス
+    """
+    return client.post("/stop_work", json={"user_id": user_id, "command_at": command_at}, headers=headers)
 
 
 # T-14
@@ -162,3 +177,194 @@ def test_start_work_naive_command_at(client: TestClient, db: Session, bot_header
 
     assert response.status_code == 422
     assert db.query(AttendanceRecord).count() == 0
+
+
+# T-23
+@pytest.mark.parametrize(
+    ("command_at", "end_time", "raw_end_time", "work_minutes"),
+    [
+        ("2026-10-08T18:10:45+09:00", datetime(2026, 10, 8, 18, 0), datetime(2026, 10, 8, 18, 10, 45), 510),
+        ("2026-10-08T18:30:00+09:00", datetime(2026, 10, 8, 18, 30), datetime(2026, 10, 8, 18, 30), 540),
+    ],
+)
+def test_stop_work(
+    client: TestClient, db: Session, bot_headers: dict[str, str],
+    command_at: str, end_time: datetime, raw_end_time: datetime, work_minutes: int,
+):
+    # 丸めた時刻で退勤でき、勤務時間が分かる。出勤の値は変わらない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:12+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, command_at)
+
+    assert response.status_code == 200
+    assert response.json() == {
+        "user_name": "Jun",
+        "start_time": "2026-10-08T09:30:00",
+        "end_time": end_time.isoformat(),
+        "work_minutes": work_minutes,
+    }
+    record = db.query(AttendanceRecord).one()
+    assert record.end_time == end_time
+    assert record.raw_end_time == raw_end_time
+    assert record.date == date(2026, 10, 8)
+    assert record.start_time == datetime(2026, 10, 8, 9, 30)
+    assert record.raw_start_time == datetime(2026, 10, 8, 9, 5, 12)
+
+
+# T-24
+def test_stop_work_utc(client: TestClient, db: Session, bot_headers: dict[str, str]):
+    # UTCの時刻で送っても、日本時間で記録される
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:10:45+00:00")
+
+    assert response.status_code == 200
+    assert response.json()["end_time"] == "2026-10-08T18:00:00"
+    record = db.query(AttendanceRecord).one()
+    assert record.end_time == datetime(2026, 10, 8, 18, 0)
+    assert record.raw_end_time == datetime(2026, 10, 8, 18, 10, 45)
+
+
+# T-25
+@pytest.mark.parametrize(
+    ("start_at", "stop_at", "end_time", "raw_end_time"),
+    [
+        ("2026-10-08T09:05:00+09:00", "2026-10-08T09:20:00+09:00",
+         datetime(2026, 10, 8, 9, 30), datetime(2026, 10, 8, 9, 20)),
+        ("2026-10-08T23:45:00+09:00", "2026-10-08T23:50:00+09:00",
+         datetime(2026, 10, 9, 0, 0), datetime(2026, 10, 8, 23, 50)),
+    ],
+)
+def test_stop_work_before_start_time(
+    client: TestClient, db: Session, bot_headers: dict[str, str],
+    start_at: str, stop_at: str, end_time: datetime, raw_end_time: datetime,
+):
+    # 丸めた退勤時刻が出勤時刻より前なら、退勤時刻を出勤時刻と同じにし、勤務時間0分になる
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, start_at)
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, stop_at)
+
+    assert response.status_code == 200
+    assert response.json()["end_time"] == end_time.isoformat()
+    assert response.json()["work_minutes"] == 0
+    record = db.query(AttendanceRecord).one()
+    assert record.end_time == end_time
+    assert record.raw_end_time == raw_end_time
+
+
+# T-26
+def test_stop_work_next_day(client: TestClient, db: Session, bot_headers: dict[str, str]):
+    # 日をまたいで退勤できる。出勤日は変わらない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T21:05:00+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-09T06:10:00+09:00")
+
+    assert response.status_code == 200
+    assert response.json()["end_time"] == "2026-10-09T06:00:00"
+    assert response.json()["work_minutes"] == 510
+    record = db.query(AttendanceRecord).one()
+    assert record.date == date(2026, 10, 8)
+    assert record.end_time == datetime(2026, 10, 9, 6, 0)
+
+
+# T-27
+def test_owner_cannot_stop_work(client: TestClient, bot_headers: dict[str, str]):
+    # 社長は退勤できない
+    response = stop_work(client, bot_headers, TEST_OWNER_DISCORD_ID, "2026-10-08T18:10:00+09:00")
+
+    assert response.status_code == 403
+    assert response.json() == {"detail": "employee_only"}
+
+
+# T-28
+def test_not_registered_cannot_stop_work(client: TestClient, bot_headers: dict[str, str]):
+    # 登録していない人は退勤できない
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T18:10:00+09:00")
+
+    assert response.status_code == 404
+    assert response.json() == {"detail": "not_registered"}
+
+
+# T-29
+@pytest.mark.parametrize("worked_before", [False, True])
+def test_not_working(client: TestClient, db: Session, bot_headers: dict[str, str], worked_before: bool):
+    # 出勤していない時は退勤できない(一度も出勤していない時と、退勤した後)
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    if worked_before:
+        start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+        stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T18:10:00+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T18:20:00+09:00")
+
+    assert response.status_code == 409
+    assert response.json() == {"detail": "not_working"}
+    if worked_before:
+        record = db.query(AttendanceRecord).one()
+        assert record.end_time == datetime(2026, 10, 8, 18, 0)
+        assert record.raw_end_time == datetime(2026, 10, 8, 18, 10)
+
+
+# T-30
+def test_stop_work_while_other_working(client: TestClient, db: Session, bot_headers: dict[str, str]):
+    # 他の人の出勤中の行は退勤しない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    register(client, bot_headers, OTHER_EMPLOYEE_ID, "Ken")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+    start_work(client, bot_headers, OTHER_EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T18:10:00+09:00")
+
+    assert response.status_code == 200
+    jun = db.query(AttendanceRecord).filter(AttendanceRecord.member_id == EMPLOYEE_ID).one()
+    ken = db.query(AttendanceRecord).filter(AttendanceRecord.member_id == OTHER_EMPLOYEE_ID).one()
+    assert jun.end_time == datetime(2026, 10, 8, 18, 0)
+    assert ken.end_time is None
+
+
+# T-31
+def test_stop_work_twice_a_day(client: TestClient, db: Session, bot_headers: dict[str, str]):
+    # 1日に2回出勤・退勤できる。退勤済みの行は変わらない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+    stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T12:10:00+09:00")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T13:05:00+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T18:10:00+09:00")
+
+    assert response.status_code == 200
+    assert response.json()["start_time"] == "2026-10-08T13:30:00"
+    assert response.json()["end_time"] == "2026-10-08T18:00:00"
+    assert response.json()["work_minutes"] == 270
+    records = db.query(AttendanceRecord).order_by(AttendanceRecord.start_time).all()
+    assert len(records) == 2
+    assert records[0].end_time == datetime(2026, 10, 8, 12, 0)
+    assert records[1].end_time == datetime(2026, 10, 8, 18, 0)
+
+
+# T-32
+def test_stop_work_invalid_bot_key(client: TestClient, db: Session, bot_headers: dict[str, str]):
+    # X-Bot-Keyが違うと使えない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+
+    response = stop_work(client, {"X-Bot-Key": "wrong-key"}, EMPLOYEE_ID, "2026-10-08T18:10:00+09:00")
+
+    assert response.status_code == 401
+    assert response.json() == {"detail": "invalid_bot_key"}
+    assert db.query(AttendanceRecord).one().end_time is None
+
+
+# T-33
+def test_stop_work_naive_command_at(client: TestClient, db: Session, bot_headers: dict[str, str]):
+    # タイムゾーンのない時刻は受け付けない
+    register(client, bot_headers, EMPLOYEE_ID, "Jun")
+    start_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T09:05:00+09:00")
+
+    response = stop_work(client, bot_headers, EMPLOYEE_ID, "2026-10-08T18:10:45")
+
+    assert response.status_code == 422
+    assert db.query(AttendanceRecord).one().end_time is None

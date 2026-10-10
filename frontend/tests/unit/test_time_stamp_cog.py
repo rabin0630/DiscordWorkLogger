@@ -1,8 +1,14 @@
-"""/start_workの返信の文(make_start_work_reply)の単体テスト"""
+"""/start_work、/stop_workの返信の文(make_start_work_reply、make_stop_work_reply)の単体テスト"""
 import pytest
 
 from cogs import time_stamp_cog
-from cogs.time_stamp_cog import START_WORK_ERROR_MESSAGES, Time_Stamp, make_start_work_reply
+from cogs.time_stamp_cog import (
+    START_WORK_ERROR_MESSAGES,
+    STOP_WORK_ERROR_MESSAGES,
+    Time_Stamp,
+    make_start_work_reply,
+    make_stop_work_reply,
+)
 from services.api_client import ApiResponse
 from utils import STAMP_API_UNAVAILABLE_MESSAGES
 
@@ -51,5 +57,49 @@ def test_start_work_reply_unknown_detail():
     response = ApiResponse(422, {"detail": [{"type": "timezone_aware", "loc": ["body", "command_at"]}]})
 
     reply = make_start_work_reply(response, "<@1>")
+
+    assert reply in STAMP_API_UNAVAILABLE_MESSAGES
+
+
+# U-11
+def test_stop_work_reply_success():
+    # 退勤できた時は、本人と社長のメンションを付けた挨拶になる
+    response = ApiResponse(200, {
+        "user_name": "Jun",
+        "start_time": "2026-10-08T09:30:00",
+        "end_time": "2026-10-08T18:00:00",
+        "work_minutes": 510,
+    })
+
+    reply = make_stop_work_reply(response, "<@1>")
+
+    prefix = f"<@1> <@{TEST_OWNER_DISCORD_ID}> "
+    assert reply.startswith(prefix)
+    expected = [m.format(name="Jun", end="18:00", work="8:30") for m in Time_Stamp.STOP_WORK_COMPLETE_MESSAGES]
+    assert reply.removeprefix(prefix) in expected
+
+
+# U-12
+@pytest.mark.parametrize(
+    ("status", "detail"),
+    [
+        (409, "not_working"),
+        (404, "not_registered"),
+        (403, "employee_only"),
+    ],
+)
+def test_stop_work_reply_error(status: int, detail: str):
+    # エラーの時はdetailに合わせた文になり、メンションは付かない
+    reply = make_stop_work_reply(ApiResponse(status, {"detail": detail}), "<@1>")
+
+    assert reply in STOP_WORK_ERROR_MESSAGES[detail]
+
+
+# U-13
+def test_stop_work_reply_unknown_detail():
+    # 表にないdetail(422など)の時は、打刻のコマンドで通信できなかった時の文になる
+    response = ApiResponse(422, {"detail": [{"type": "timezone_aware", "loc": ["body", "command_at"]}]})
+
+    reply = make_stop_work_reply(response, "<@1>")
 
     assert reply in STAMP_API_UNAVAILABLE_MESSAGES
