@@ -1,4 +1,7 @@
 # DiscordWorkLogger
+
+![test](https://github.com/rabin0630/DiscordWorkLogger/actions/workflows/test.yml/badge.svg)
+
 Discordのスラッシュコマンドで出退勤を記録できる勤怠管理Botと、作業用タイマーBotのアプリケーション。
 Discord Bot(discord.py)とAPIサーバー(FastAPI)、データベース(MySQL)をDockerで動かしている。
 
