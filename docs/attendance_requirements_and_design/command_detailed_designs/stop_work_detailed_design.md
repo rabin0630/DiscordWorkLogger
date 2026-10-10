@@ -196,98 +196,49 @@ sequenceDiagram
 ---
 ## Bot
 ### 時間の表示(`utils.py`)
-```python
-def format_minutes(minutes: int) -> str:
-    """分数を「時間:分」の文字列にする。24時間を超えてもそのまま時間で表す
+| 関数 | 内容 | 例 |
+| --- | --- | --- |
+| `format_minutes(minutes: int) -> str` | 追加。分数を「時間:分」の文字列にする。分は0埋めし、24時間を超えてもそのまま時間で表す | `510` → `8:30`、`0` → `0:00`、`1800` → `30:00` |
 
-    Args:
-        minutes (int): 表示する分数。0以上
-
-    Returns:
-        str: 「8:30」「0:00」「30:00」のような文字列
-
-    Examples:
-
-        >>> format_minutes(510)
-        '8:30'
-    """
-    return f"{minutes // 60}:{minutes % 60:02d}"
-```
 - `format_time`の下に置く。
 - [全体の詳細設計](../detailed_design.md#時刻と時間の表示utilspy)の`format_start_time`は、`/stop_work`では使わないので、`/work_status`のステップで作る。
 
 ### Cog(`cogs/time_stamp_cog.py`)
-`/start_work`で作り直した`Time_Stamp`のCogに、`stop_work_command`を足す。
+`/start_work`で作り直した`Time_Stamp`のCogに足す。
 
-```python
-    # 退勤する
-    @app_commands.command(name=f"stop_work{index}", description="退勤します")
-    @app_commands.guild_only()
-    async def stop_work_command(self, interaction: discord.Interaction) -> None:
-        """退勤を記録し、本人と社長にメンションした挨拶を、サーバーの全員に見える形で返信する
+| 名前 | 置く所 | 内容 |
+| --- | --- | --- |
+| `stop_work_command(self, interaction) -> None` | `Time_Stamp` | 追加。退勤を記録し、返信をサーバーの全員に見える形で送る |
+| `make_stop_work_reply(response: ApiResponse, user_mention: str) -> str` | モジュール(`make_start_work_reply`の下) | 追加。`/stop_work`の結果から返信の文を作る。Discordを使わないので単体テストできる |
+| `STOP_WORK_ERROR_MESSAGES: dict[str, list[str]]` | モジュール(`START_WORK_ERROR_MESSAGES`の下) | 追加。`detail`とメッセージのリストの辞書 |
 
-        Args:
-            interaction (discord.Interaction): コマンドのinteraction。
-                interaction.user.idで退勤する人を、interaction.created_atで退勤時刻を決める
-        """
-        await interaction.response.defer()
-        command_at = interaction.created_at.astimezone(JST)
-        payload = {"user_id": interaction.user.id, "command_at": command_at.isoformat()}
-        try:
-            response = await api_client.post("/stop_work", payload)
-        except api_client.ApiUnavailableError:
-            await interaction.followup.send(random_choice_format_list_message(STAMP_API_UNAVAILABLE_MESSAGES))
-            return
-        await interaction.followup.send(make_stop_work_reply(response, interaction.user.mention))
-```
+`stop_work_command`の処理(`start_work_command`と同じ形):
+1. `interaction.response.defer()`する。
+2. `interaction.created_at`を日本時間にして`command_at`にする。
+3. `api_client.post("/stop_work", {user_id, command_at})`を呼ぶ。`command_at`はタイムゾーン付きのISO 8601の文字列で送る。
+4. `ApiUnavailableError`なら、`STAMP_API_UNAVAILABLE_MESSAGES`から選んだ文を送って終わる。
+5. それ以外は、`make_stop_work_reply(response, interaction.user.mention)`の文を送る。
+
+`make_stop_work_reply`の処理:
+1. ステータスが200なら、`STOP_WORK_COMPLETE_MESSAGES`から1つ選び、`name`(登録名)、`end`(`format_time(end_time)`)、`work`(`format_minutes(work_minutes)`)を入れる。先頭に「本人のメンション 社長のメンション(`<@{OWNER_DISCORD_ID}>`)」を付けて返す。
+2. それ以外は、`detail`で`STOP_WORK_ERROR_MESSAGES`を引き、見つかったリストから選んだ文を返す。
+3. 見つからない時(422で`detail`がリストの時も含む)は、`STAMP_API_UNAVAILABLE_MESSAGES`から選んだ文を返す。
+
+`STOP_WORK_ERROR_MESSAGES`の中身:
+
+| detail | メッセージのリスト | 置いておく所 |
+| --- | --- | --- |
+| `employee_only` | `EMPLOYEE_ONLY_MESSAGES` | `utils.py` |
+| `not_registered` | `NOT_REGISTERED_MESSAGES` | `utils.py` |
+| `not_working` | `NOT_WORKING_MESSAGES`(追加) | `Time_Stamp` |
+
 - 退勤時刻も`/start_work`と同じく`interaction.created_at`を使う。
-
-返信の文は、`make_start_work_reply`と同じく、Discordを使わないモジュールの関数`make_stop_work_reply`で作る。`make_start_work_reply`の下に置く。
-
-```python
-def make_stop_work_reply(response: ApiResponse, user_mention: str) -> str:
-    """/stop_workの結果から、返信の文を作る
-
-    Discordを使わないので、単体テストできる。
-
-    Args:
-        response (ApiResponse): /stop_workの結果
-        user_mention (str): コマンドした人のメンション。interaction.user.mention
-
-    Returns:
-        str: ランダムに選んだ返信の文。200の時は、先頭に本人と社長のメンションを付ける。
-            表にないdetailの時は、打刻のコマンドで通信できなかった時の文
-    """
-    if response.status == 200:
-        end_time = datetime.fromisoformat(response.body["end_time"])
-        message = random_choice_format_list_message(
-            Time_Stamp.STOP_WORK_COMPLETE_MESSAGES,
-            name=response.body["user_name"], end=format_time(end_time),
-            work=format_minutes(response.body["work_minutes"]))
-        return f"{user_mention} <@{OWNER_DISCORD_ID}> {message}"
-
-    detail = response.body.get("detail")
-    # 422の時はdetailがリストで返ってくるので、文字列の時だけ探す
-    messages = STOP_WORK_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
-    if messages is None:
-        return random_choice_format_list_message(STAMP_API_UNAVAILABLE_MESSAGES)
-    return random_choice_format_list_message(messages)
-```
-
-- `STOP_WORK_ERROR_MESSAGES`は`detail`とメッセージのリストの辞書。`START_WORK_ERROR_MESSAGES`の下に置く。
-
-  | detail | メッセージのリスト | 置いておく所 |
-  | --- | --- | --- |
-  | `employee_only` | `EMPLOYEE_ONLY_MESSAGES` | `utils.py` |
-  | `not_registered` | `NOT_REGISTERED_MESSAGES` | `utils.py` |
-  | `not_working` | `NOT_WORKING_MESSAGES`(追加) | `Time_Stamp` |
-
 - メンションは成功した時だけ付ける(`/start_work`と同じ)。
 - 挨拶の退勤時刻は`format_time`だけを使い、日付は付けない([全体の詳細設計](../detailed_design.md#時刻と時間の表示utilspy)のとおり)。日をまたいで退勤しても「退勤 6:00」になる。
 - レスポンスの`start_time`は挨拶に使わない。
 
 ### 返信の文
-- 各メッセージを数パターン用意し、`random_choice_format_list_message`でランダムに選ぶ。下は各リストの1つ目。
+- 各メッセージを数パターン用意し、`random_choice_format_list_message`でランダムに選ぶ。
 - 「!」は全角(`！`)で書く。メッセージの中のコマンド名に`_test`は付けない。
 
 | 場面 | メッセージの例 | リスト |
@@ -298,22 +249,15 @@ def make_stop_work_reply(response: ApiResponse, user_mention: str) -> str:
 | `not_working` | まだ出勤していないのだ！出勤し忘れていたら、社長に伝えるのだ！ | `NOT_WORKING_MESSAGES`(追加) |
 | 通信できない | サーバーとつながらなかったのだ…打刻はできていないのだ！少し待ってからもう一度試してほしいのだ！ | `STAMP_API_UNAVAILABLE_MESSAGES` |
 
-- 足すリストの例(実装の時に、ほかの文も足してよい)。`ALREADY_WORKING_LONG_MESSAGES`の下に置く。
-
-  ```python
-  STOP_WORK_COMPLETE_MESSAGES: list[str] = [
-      "{name}なのだ！退勤したのだ！お疲れさまなのだ！(退勤 {end} / 勤務時間 {work})",
-      "{name}が退勤したのだ！今日もよく頑張ったのだ！(退勤 {end} / 勤務時間 {work})",
-      "お疲れさまなのだ！{name}の退勤をしっかり記録したのだ！(退勤 {end} / 勤務時間 {work})",
-  ]
-
-  NOT_WORKING_MESSAGES: list[str] = [
-      "まだ出勤していないのだ！出勤し忘れていたら、社長に伝えるのだ！",
-      "出勤の記録がないのだ！出勤し忘れていたら、社長に伝えるのだ！",
-      "ん？今は勤務外なのだ…出勤し忘れていたら、社長に伝えてほしいのだ！",
-  ]
-  ```
-
+- 足すリストの文の例(実装の時に、ほかの文も足してよい)。2つとも`Time_Stamp`の`ALREADY_WORKING_LONG_MESSAGES`の下に置く。
+  - `STOP_WORK_COMPLETE_MESSAGES`
+    - {name}なのだ！退勤したのだ！お疲れさまなのだ！(退勤 {end} / 勤務時間 {work})
+    - {name}が退勤したのだ！今日もよく頑張ったのだ！(退勤 {end} / 勤務時間 {work})
+    - お疲れさまなのだ！{name}の退勤をしっかり記録したのだ！(退勤 {end} / 勤務時間 {work})
+  - `NOT_WORKING_MESSAGES`
+    - まだ出勤していないのだ！出勤し忘れていたら、社長に伝えるのだ！
+    - 出勤の記録がないのだ！出勤し忘れていたら、社長に伝えるのだ！
+    - ん？今は勤務外なのだ…出勤し忘れていたら、社長に伝えてほしいのだ！
 - メンションは`make_stop_work_reply`で付けるので、`STOP_WORK_COMPLETE_MESSAGES`の文には書かない。
 - `{name}`はAPIが返した登録名を使う(Discordの表示名ではない)。
 
@@ -362,121 +306,25 @@ def make_stop_work_reply(response: ApiResponse, user_mention: str) -> str:
 | 10/8 21:30 | 10/9 6:10 | 10/9 6:00 | 510(8:30) |
 
 ### 各層の処理
-#### `schemas/attendance.py`
-```python
-class StopWorkRequest(BaseModel):
-    """/stop_workのリクエスト
+| ファイル | 名前 | 内容 |
+| --- | --- | --- |
+| `schemas/attendance.py` | `StopWorkRequest` | 追加。`user_id: int`、`command_at: AwareDatetime`(タイムゾーンがないと422) |
+| | `StopWorkResponse` | 追加。`user_name: str`、`start_time: datetime`、`end_time: datetime`、`work_minutes: int` |
+| `routers/attendance_routers.py` | `stop_work(request: StopWorkRequest, db: Session) -> StopWorkResponse` | 追加。`POST /stop_work`。`attendance_service.stop_work`を呼び、結果を`StopWorkResponse`にして返す |
+| `services/attendance_service.py` | `stop_work(user_id: int, command_at: datetime, db: Session) -> tuple[Member, AttendanceRecord, int]` | 追加(`start_work`の下)。退勤した人、退勤時刻を入れた行、勤務時間(分)を返す。退勤できない時は`AppError`(`employee_only`、`not_registered`、`not_working`)を投げる |
+| `crud/attendance_crud.py` | `end_record(record: AttendanceRecord, end_time: datetime, raw_end_time: datetime) -> AttendanceRecord` | 追加。出勤中の行に`end_time`と`raw_end_time`を入れて返す。コミットしない |
 
-    Attributes:
-        user_id (int): 退勤する人のDiscordのユーザーID
-        command_at (AwareDatetime): コマンドした時刻。タイムゾーン付き(ないと422)
-    """
-    user_id: int
-    command_at: AwareDatetime
+`attendance_service.stop_work`の処理:
+1. `get_registered_member(user_id, db, for_update=True)`で、社長と未登録を確かめ、`Member_table`のその人の行をロックする。このトランザクションで最初のSELECTにする(待った後に、相手がコミットした行を読めるようにするため)。
+2. `to_jst(command_at)`で日本時間にする(`now`)。
+3. `attendance_crud.get_working_record(user_id, db)`で出勤中の行を探す。なければ`AppError(409, "not_working")`。
+4. 退勤時刻を`max(floor_30(now), 出勤中の行のstart_time)`にする。
+5. `attendance_crud.end_record(出勤中の行, 退勤時刻, now)`で値を入れる。
+6. `db.commit()`する。ここでUPDATEが保存され、ロックが外れる。`db.refresh`で行を読み直す。
+7. `minutes_between(start_time, end_time)`で勤務時間を計算し、`(member, 行, 勤務時間)`を返す。
 
-
-class StopWorkResponse(BaseModel):
-    """/stop_workのレスポンス
-
-    Attributes:
-        user_name (str): 退勤した人の登録名。挨拶に使う
-        start_time (datetime): 出勤時刻(丸めた後、タイムゾーンなしの日本時間)
-        end_time (datetime): 退勤時刻(丸めた後、タイムゾーンなしの日本時間)
-        work_minutes (int): 今回の勤務時間(分)。丸めた後の出勤時刻から退勤時刻まで
-    """
-    user_name: str
-    start_time: datetime
-    end_time: datetime
-    work_minutes: int
-```
-
-#### `routers/attendance_routers.py`
-```python
-@router.post("/stop_work", response_model=StopWorkResponse)
-def stop_work(request: StopWorkRequest, db: Session = Depends(get_db)) -> StopWorkResponse:
-    """POST /stop_work: 退勤を記録する
-
-    Args:
-        request (StopWorkRequest): 退勤する人のuser_idと、コマンドした時刻
-        db (Session): DBのセッション
-
-    Returns:
-        StopWorkResponse: 登録名と、丸めた出勤時刻・退勤時刻と、勤務時間(分)
-
-    Raises:
-        AppError: 退勤できない時(attendance_service.stop_workと同じ)
-
-    Note:
-        AppErrorは、main.pyの例外ハンドラーがエラーのレスポンスにする
-    """
-    member, record, work_minutes = attendance_service.stop_work(request.user_id, request.command_at, db)
-    return StopWorkResponse(
-        user_name=member.user_name, start_time=record.start_time, end_time=record.end_time,
-        work_minutes=work_minutes)
-```
-
-#### `services/attendance_service.py`
-```python
-def stop_work(user_id: int, command_at: datetime, db: Session) -> tuple[Member, AttendanceRecord, int]:
-    """退勤を記録する
-
-    「確認する順番」の表のとおりに確かめてから、出勤中の行に退勤時刻を書き込み、コミットする。
-    同時に2回退勤されても後の方が退勤時刻を上書きしないよう、最初にMember_tableのその人の行をロックする。
-
-    Args:
-        user_id (int): 退勤する人のDiscordのユーザーID
-        command_at (datetime): コマンドした時刻。タイムゾーン付き
-        db (Session): DBのセッション
-
-    Returns:
-        tuple[Member, AttendanceRecord, int]: 退勤した人と、退勤時刻を書き込んだ行と、勤務時間(分)
-
-    Raises:
-        AppError: 退勤できない時。detailは次のどれか
-            - employee_only(403): 社長
-            - not_registered(404): 登録していない
-            - not_working(409): 勤務外
-    """
-    # ロックは、このトランザクションで最初のSELECTにする(待った後に、相手がコミットした行を読めるようにするため)
-    member = get_registered_member(user_id, db, for_update=True)
-    now = to_jst(command_at)
-
-    working_record = attendance_crud.get_working_record(user_id, db)
-    if working_record is None:
-        raise AppError(409, "not_working")
-
-    # 丸めた退勤時刻が出勤時刻より前なら、出勤時刻と同じにする(勤務時間0分)
-    end_time = max(floor_30(now), working_record.start_time)
-    record = attendance_crud.end_record(working_record, end_time, now)
-    db.commit()
-    db.refresh(record)
-    return member, record, minutes_between(record.start_time, record.end_time)
-```
-- `start_work`の下に置く。
-- `db.commit()`でUPDATEが保存され、`Member_table`の行のロックが外れる。
-
-#### `crud/attendance_crud.py`
-| 関数 | 内容 |
-| --- | --- |
-| `end_record(record, end_time, raw_end_time) -> AttendanceRecord` | 追加。出勤中の行に退勤時刻を入れる。コミットしない |
-
-```python
-def end_record(record: AttendanceRecord, end_time: datetime, raw_end_time: datetime) -> AttendanceRecord:
-    """出勤中の行に退勤時刻を入れる。値を変えるだけで、コミットしない
-
-    Args:
-        record (AttendanceRecord): get_working_recordで見つけた出勤中の行
-        end_time (datetime): 丸めた後の退勤時刻
-        raw_end_time (datetime): 打刻した本当の退勤時刻
-
-    Returns:
-        AttendanceRecord: 退勤時刻を入れた行(引数のrecordと同じもの)
-    """
-    record.end_time = end_time
-    record.raw_end_time = raw_end_time
-    return record
-```
-- `record`はセッションから読んだ行なので、`db.add`しなくても、コミットの時にUPDATEされる。そのため`db`を引数に取らない。
+- `end_record`の`record`はセッションから読んだ行なので、`db.add`しなくても、コミットの時にUPDATEされる。そのため`db`を引数に取らない。
+- docstringは[docstringの書き方](../detailed_design.md#docstringの書き方)に従い、実装の時に書く。
 
 ---
 ## クラス
@@ -623,6 +471,7 @@ classDiagram
 
 ---
 ## 決めたこと
+- **この設計書にはコードを書かない。** 関数のシグネチャ、処理の手順、決めたことだけを書く。コードと設計書の両方に同じものを書くと、直した時にずれてしまうため。コードの中身は実装とPRで確かめる。
 - **退勤時刻は`max(floor_30(今), start_time)`にする。** [全体の詳細設計](../detailed_design.md#stop_work)のとおり。出勤は切り上げ、退勤は切り捨てなので、同じ30分の間に出勤・退勤すると退勤が出勤より前になる。その時は勤務時間0分の記録として残す。
 - **退勤できるまでの時間の長さは確かめない。** 長く出勤中のままでも、退勤を断ると記録が直せなくなるため。退勤し忘れていた時の時刻の直しは、社長がWebで行う。
 - **`/stop_work`でも、最初に`Member_table`のその人の行をロックする。** 同時に2回退勤した時に後の方が退勤時刻を上書きしないように、また`/start_work`と同時に来た時に順番に処理するため。ロックを最初のSELECTにする理由は[`/start_work`の決めたこと](./start_work_detailed_design.md#決めたこと)と同じ。
