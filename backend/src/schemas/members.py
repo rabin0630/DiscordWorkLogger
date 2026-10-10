@@ -46,3 +46,21 @@ class RenameMemberResponse(BaseModel):
     """
     old_name: str
     new_name: str
+
+
+class GetNameRequest(BaseModel):
+    """/get_nameのリクエスト
+
+    Attributes:
+        user_id (int): 名前を確認する人のDiscordのユーザーID
+    """
+    user_id: int
+
+
+class GetNameResponse(BaseModel):
+    """/get_nameのレスポンス
+
+    Attributes:
+        user_name (str): 登録名
+    """
+    user_name: str
