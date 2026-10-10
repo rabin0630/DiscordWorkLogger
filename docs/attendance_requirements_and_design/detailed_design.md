@@ -434,8 +434,8 @@ sequenceDiagram
 ### 返信の見え方
 | コマンド | `defer` | 理由 |
 | --- | --- | --- |
-| `/register`、`/myname`、`/rename`、`/start_work`、`/stop_work` | `defer()` | 全員に見せる |
-| `/work_status`、`/all_work_status` | `defer(ephemeral=True)` | 自分だけに見せる |
+| `/register`、`/myname`、`/rename`、`/start_work`、`/stop_work`、`/work_status` | `defer()` | 全員に見せる |
+| `/all_work_status` | `defer(ephemeral=True)` | 自分だけに見せる |
 | `/help` | なし(APIを使わないので、すぐ`send_message(ephemeral=True)`) | 自分だけに見せる |
 
 - エラーのメッセージも、そのコマンドの返信と同じ見え方になる(例: `/start_work`の「もう出勤しているのだ!」は全員に見える)。
