@@ -45,6 +45,23 @@ def format_time(dt: datetime) -> str:
     return f"{dt.hour}:{dt.minute:02d}"
 
 
+def format_minutes(minutes: int) -> str:
+    """分数を「時間:分」の文字列にする。24時間を超えてもそのまま時間で表す
+
+    Args:
+        minutes (int): 表示する分数。0以上
+
+    Returns:
+        str: 「8:30」「0:00」「30:00」のような文字列
+
+    Examples:
+
+        >>> format_minutes(510)
+        '8:30'
+    """
+    return f"{minutes // 60}:{minutes % 60:02d}"
+
+
 
 # どのコマンドでも使うメッセージ
 ## 社長が従業員専用のコマンドを使った時(detail: employee_only)

@@ -42,3 +42,21 @@ def create_record(
         member_id=member_id, date=date, start_time=start_time, raw_start_time=raw_start_time)
     db.add(record)
     return record
+
+
+def end_record(record: AttendanceRecord, end_time: datetime, raw_end_time: datetime) -> AttendanceRecord:
+    """出勤中の行に退勤時刻を入れる。値を変えるだけで、コミットしない
+
+    recordはセッションから読んだ行なので、db.addしなくても、コミットの時にUPDATEされる。
+
+    Args:
+        record (AttendanceRecord): get_working_recordで見つけた出勤中の行
+        end_time (datetime): 丸めた後の退勤時刻
+        raw_end_time (datetime): 打刻した本当の退勤時刻
+
+    Returns:
+        AttendanceRecord: 退勤時刻を入れた行(引数のrecordと同じもの)
+    """
+    record.end_time = end_time
+    record.raw_end_time = raw_end_time
+    return record
