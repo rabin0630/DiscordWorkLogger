@@ -1,6 +1,6 @@
 """Botで共通に使う関数とメッセージ"""
 import random
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def random_choice_format_list_message(list_message: list[str], **kwargs) -> str:
     """リストからメッセージをランダムに1つ選び、{name}などを埋めて返す
@@ -60,6 +60,35 @@ def format_minutes(minutes: int) -> str:
         '8:30'
     """
     return f"{minutes // 60}:{minutes % 60:02d}"
+
+
+def format_start_time(start: datetime, now: datetime) -> str:
+    """出勤時刻に、nowの日付から見た日付を付けて「時:分」の文字列にする
+
+    日付だけを比べる。2日以上前の時は「月/日」を付け、年は付けない。
+
+    Args:
+        start (datetime): 出勤時刻(丸めた後、日本時間)
+        now (datetime): 今の時刻(日本時間)。APIに送ったcommand_atと同じものを使う
+
+    Returns:
+        str: 「9:30」「前日21:30」「10/1 21:30」「翌0:00」のような文字列
+
+    Examples:
+
+        >>> format_start_time(datetime(2026, 10, 7, 21, 30), datetime(2026, 10, 8, 12, 40))
+        '前日21:30'
+    """
+    start_date = start.date()
+    now_date = now.date()
+    if start_date == now_date:
+        return format_time(start)
+    if start_date == now_date - timedelta(days=1):
+        return f"前日{format_time(start)}"
+    # ceil_30で進むのは最大30分なので、翌日より後になることはない
+    if start_date == now_date + timedelta(days=1):
+        return f"翌{format_time(start)}"
+    return f"{start.month}/{start.day} {format_time(start)}"
 
 
 

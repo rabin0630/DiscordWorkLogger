@@ -50,3 +50,29 @@ class StopWorkResponse(BaseModel):
     start_time: datetime
     end_time: datetime
     work_minutes: int
+
+
+class WorkStatusRequest(BaseModel):
+    """/work_statusのリクエスト
+
+    Attributes:
+        user_id (int): 出勤状況を確認する人のDiscordのユーザーID
+        command_at (AwareDatetime): コマンドした時刻。タイムゾーン付き(ないと422)
+    """
+    user_id: int
+    command_at: AwareDatetime
+
+
+class WorkStatusResponse(BaseModel):
+    """/work_statusのレスポンス
+
+    勤務外の時も、start_timeとelapsed_minutesは省かずNoneで返す。
+
+    Attributes:
+        is_working (bool): 出勤中ならTrue、勤務外ならFalse
+        start_time (datetime | None): 出勤時刻(丸めた後、タイムゾーンなしの日本時間)。勤務外ならNone
+        elapsed_minutes (int | None): 今回の出勤で働いている時間(分)。勤務外ならNone
+    """
+    is_working: bool
+    start_time: datetime | None
+    elapsed_minutes: int | None

@@ -1,16 +1,21 @@
-"""/start_work、/stop_workの返信の文(make_start_work_reply、make_stop_work_reply)の単体テスト"""
+"""/start_work、/stop_work、/work_statusの返信の文(make_start_work_reply、make_stop_work_reply、make_work_status_reply)の単体テスト"""
+from datetime import datetime
+
 import pytest
 
 from cogs import time_stamp_cog
 from cogs.time_stamp_cog import (
     START_WORK_ERROR_MESSAGES,
     STOP_WORK_ERROR_MESSAGES,
+    WORK_STATUS_ERROR_MESSAGES,
     Time_Stamp,
     make_start_work_reply,
     make_stop_work_reply,
+    make_work_status_reply,
 )
 from services.api_client import ApiResponse
-from utils import STAMP_API_UNAVAILABLE_MESSAGES
+from settings_env import JST
+from utils import API_UNAVAILABLE_MESSAGES, STAMP_API_UNAVAILABLE_MESSAGES
 
 TEST_OWNER_DISCORD_ID = "999"
 
@@ -103,3 +108,52 @@ def test_stop_work_reply_unknown_detail():
     reply = make_stop_work_reply(response, "<@1>")
 
     assert reply in STAMP_API_UNAVAILABLE_MESSAGES
+
+
+COMMAND_AT = datetime(2026, 10, 8, 12, 40, 30, tzinfo=JST)
+
+
+# U-18
+def test_work_status_reply_working():
+    # 出勤中の時は、日付付きの出勤時刻と働いている時間を入れた文になり、メンションは付かない
+    response = ApiResponse(200, {"is_working": True, "start_time": "2026-10-07T21:30:00", "elapsed_minutes": 900})
+
+    reply = make_work_status_reply(response, COMMAND_AT)
+
+    expected = [m.format(start="前日21:30", elapsed="15:00") for m in Time_Stamp.WORKING_STATUS_MESSAGES]
+    assert reply in expected
+
+
+# U-19
+def test_work_status_reply_off_work():
+    # 勤務外の時は、勤務外の文になる
+    response = ApiResponse(200, {"is_working": False, "start_time": None, "elapsed_minutes": None})
+
+    reply = make_work_status_reply(response, COMMAND_AT)
+
+    assert reply in Time_Stamp.OFF_WORK_MESSAGES
+
+
+# U-20
+@pytest.mark.parametrize(
+    ("status", "detail"),
+    [
+        (404, "not_registered"),
+        (403, "employee_only"),
+    ],
+)
+def test_work_status_reply_error(status: int, detail: str):
+    # エラーの時はdetailに合わせた文になる
+    reply = make_work_status_reply(ApiResponse(status, {"detail": detail}), COMMAND_AT)
+
+    assert reply in WORK_STATUS_ERROR_MESSAGES[detail]
+
+
+# U-21
+def test_work_status_reply_unknown_detail():
+    # 表にないdetail(422など)の時は、通信できなかった時の文になる(「打刻はできていない」は付かない)
+    response = ApiResponse(422, {"detail": [{"type": "timezone_aware", "loc": ["body", "command_at"]}]})
+
+    reply = make_work_status_reply(response, COMMAND_AT)
+
+    assert reply in API_UNAVAILABLE_MESSAGES

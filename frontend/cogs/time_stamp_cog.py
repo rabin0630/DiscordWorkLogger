@@ -1,4 +1,4 @@
-"""/start_work、/stop_workコマンド(出退勤の記録)のCog"""
+"""/start_work、/stop_work、/work_statusコマンド(出退勤の記録と出勤状況の確認)のCog"""
 from datetime import datetime
 
 import discord
@@ -12,8 +12,10 @@ from utils import (
     random_choice_format_list_message,
     format_time,
     format_minutes,
+    format_start_time,
     EMPLOYEE_ONLY_MESSAGES,
     NOT_REGISTERED_MESSAGES,
+    API_UNAVAILABLE_MESSAGES,
     STAMP_API_UNAVAILABLE_MESSAGES,
 )
 
@@ -51,6 +53,18 @@ class Time_Stamp(commands.Cog):
         "まだ出勤していないのだ！出勤し忘れていたら、社長に伝えるのだ！",
         "出勤の記録がないのだ！出勤し忘れていたら、社長に伝えるのだ！",
         "ん？今は勤務外なのだ…出勤し忘れていたら、社長に伝えてほしいのだ！",
+    ]
+
+    WORKING_STATUS_MESSAGES: list[str] = [
+        "出勤中なのだ！{start}に出勤して、今{elapsed}働いているのだ！",
+        "今は出勤中なのだ！{start}から{elapsed}働いているのだ！その調子なのだ！",
+        "{start}に出勤して、今{elapsed}働いているのだ！無理しすぎないようにするのだ！",
+    ]
+
+    OFF_WORK_MESSAGES: list[str] = [
+        "今は勤務外なのだ！",
+        "今は出勤していないのだ！勤務外なのだ！",
+        "勤務外なのだ！ゆっくり休むのだ！",
     ]
 
     def __init__(self, bot):
@@ -96,6 +110,26 @@ class Time_Stamp(commands.Cog):
             return
         await interaction.followup.send(make_stop_work_reply(response, interaction.user.mention))
 
+    # 出勤状況を確認する
+    @app_commands.command(name=f"work_status{index}", description="自分の出勤状況を確認します")
+    @app_commands.guild_only()
+    async def work_status_command(self, interaction: discord.Interaction) -> None:
+        """出勤状況を、サーバーの全員に見える形で返信する。メンションは付けない
+
+        Args:
+            interaction (discord.Interaction): コマンドのinteraction。
+                interaction.user.idで確認する人を、interaction.created_atで働いている時間の計算に使う時刻を決める
+        """
+        await interaction.response.defer()
+        command_at = interaction.created_at.astimezone(JST)
+        payload = {"user_id": interaction.user.id, "command_at": command_at.isoformat()}
+        try:
+            response = await api_client.post("/work_status", payload)
+        except api_client.ApiUnavailableError:
+            await interaction.followup.send(random_choice_format_list_message(API_UNAVAILABLE_MESSAGES))
+            return
+        await interaction.followup.send(make_work_status_reply(response, command_at))
+
 
 # /start_workのdetailと、返すメッセージのリスト
 START_WORK_ERROR_MESSAGES: dict[str, list[str]] = {
@@ -110,6 +144,12 @@ STOP_WORK_ERROR_MESSAGES: dict[str, list[str]] = {
     "employee_only": EMPLOYEE_ONLY_MESSAGES,
     "not_registered": NOT_REGISTERED_MESSAGES,
     "not_working": Time_Stamp.NOT_WORKING_MESSAGES,
+}
+
+# /work_statusのdetailと、返すメッセージのリスト
+WORK_STATUS_ERROR_MESSAGES: dict[str, list[str]] = {
+    "employee_only": EMPLOYEE_ONLY_MESSAGES,
+    "not_registered": NOT_REGISTERED_MESSAGES,
 }
 
 
@@ -167,4 +207,34 @@ def make_stop_work_reply(response: ApiResponse, user_mention: str) -> str:
     messages = STOP_WORK_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
     if messages is None:
         return random_choice_format_list_message(STAMP_API_UNAVAILABLE_MESSAGES)
+    return random_choice_format_list_message(messages)
+
+
+def make_work_status_reply(response: ApiResponse, command_at: datetime) -> str:
+    """/work_statusの結果から、返信の文を作る
+
+    Discordを使わないので、単体テストできる。
+
+    Args:
+        response (ApiResponse): /work_statusの結果
+        command_at (datetime): コマンドした時刻(日本時間)。APIに送ったものと同じ。出勤時刻の日付の表示に使う
+
+    Returns:
+        str: ランダムに選んだ返信の文。メンションは付けない。
+            表にないdetailの時は、通信できなかった時の文(打刻していないので「打刻はできていない」は付けない)
+    """
+    if response.status == 200:
+        if response.body["is_working"]:
+            start_time = datetime.fromisoformat(response.body["start_time"])
+            return random_choice_format_list_message(
+                Time_Stamp.WORKING_STATUS_MESSAGES,
+                start=format_start_time(start_time, command_at),
+                elapsed=format_minutes(response.body["elapsed_minutes"]))
+        return random_choice_format_list_message(Time_Stamp.OFF_WORK_MESSAGES)
+
+    detail = response.body.get("detail")
+    # 422の時はdetailがリストで返ってくるので、文字列の時だけ探す
+    messages = WORK_STATUS_ERROR_MESSAGES.get(detail) if isinstance(detail, str) else None
+    if messages is None:
+        return random_choice_format_list_message(API_UNAVAILABLE_MESSAGES)
     return random_choice_format_list_message(messages)
