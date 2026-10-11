@@ -9,30 +9,6 @@ from cogs.time_stamp_cog import Time_Stamp
 from cogs.register_cog import Register
 from cogs.help_cog import Help
 from discord.ext import commands
-# NOTE
-## https://dottrail.codemountains.org/annotation-todo-tree/  アノテーションコメントの説明url
-## interaction.response.channel.sendはリクエストに対してのレスポンスとして一回は必要
-## 2回目以降のメッセージ送信はinteraction.followup.sendを使用する
-## モノステート・パターンという設計パターンを使用しているらしい
-
-
-# TODO
-## classメソッドの入れ替え : 部品などを一番上にして、コマンドで使用するメソッドは一番下がわかりやすいかも
-## **kwargsの意味を調べる
-## テストコードを調べる
-## ファイルの分割をする;;;
-
-# FIXME
-
-# HACK
-
-# XXX
-## pomodoro_timer : 不明
-
-
-# TEST環境の時は引数TEST_TOKENとTEST_CHANNEL_IDに変更
-# (HACK)リファクタリングした方がいい。とてもみにくい
-
 
 # envファイル取得
 load_dotenv()
@@ -44,7 +20,7 @@ env = "TARGET" if env_mode == "prod" else "TEST"
 
 DISCORD_TOKEN: str = os.getenv(f"{env}_TOKEN")
 TARGET_GUILD_ID = int(os.getenv(f"{env}_GUILD_ID"))
-ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "test")  # botのステータス
+ACTIVITY = discord.Game("タイマー" if env_mode == "prod" else "/helpでコマンドを確認")  # botのステータス
 
 intents = discord.Intents.default()
 intents.message_content = True
